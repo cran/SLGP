@@ -1,0 +1,149 @@
+## ----include = FALSE----------------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+## ----loadHousing--------------------------------------------------------------
+library(dplyr)
+# Load the dataset (available in MASS package)
+require(MASS)
+data("Boston", package = "MASS")
+df <- Boston 
+range_response <- range(df$rad)
+range_x <- matrix(c(c(1, 13),
+                    range(df$medv)), # Use c(1, 13) instead of range = c(1.1296 12.1265)
+                  # For easier chunks
+                  ncol=2, byrow=TRUE)
+
+## ----figureHousing, fig.cap = "Figure 1: Index of Accessibility to Radial Highways as a Function of Home Value and Distance to Employment Centers", fig.fullwidth=TRUE, fig.height=6, fig.width=6, fig.align='center',fig.pos="H"----
+library(ggplot2)
+library(ggpubr)
+
+# Histogram: Distribution of med by age bin
+ggplot(df, aes(x = dis, y=medv, fill=as.factor(rad))) +
+  geom_point(pch=21)+
+  labs(x = "Median value of owner-occupied homes [k$]", 
+       y = "weighted distance to employment centers", 
+       title = "Scatter-plot of accessibility to radial highways") +
+  theme_minimal()+
+  scale_fill_viridis_d(option = "viridis",
+                       guide = guide_legend(nrow = 3,
+                                            title = "Index of accessibility",
+                                            barheight = unit(2, units = "mm"),
+                                            barwidth = unit(55, units = "mm"),
+                                            title.position = 'top',
+                                            label.position = "bottom",
+                                            title.hjust = 0.5))+
+  theme(legend.position = "bottom")
+
+
+## ----figureHousing2, fig.cap ="Figure 2: Index of Accessibility to Radial Highways as a Function of Home Value and Distance to Employment Centers, with rescaled indices", fig.fullwidth=TRUE, fig.height=6, fig.width=6, fig.align='center',fig.pos="H"----
+df$rad <- ifelse(df$rad==24, 9, df$rad) 
+range_response <- range(df$rad)
+
+# Histogram: Distribution of med by age bin
+ggplot(df, aes(x = dis, y=medv, fill=factor(rad, levels=seq(9)))) +
+  geom_point(pch=21)+
+  labs(x = "Median value of owner-occupied homes [k$]", 
+       y = "weighted distance to employment centers", 
+       title = "Scatter-plot of accessibility to radial highways") +
+  theme_minimal()+
+  scale_fill_viridis_d(option = "viridis",
+                       guide = guide_legend(nrow = 3,
+                                            title = "Index of accessibility",
+                                            barheight = unit(2, units = "mm"),
+                                            barwidth = unit(55, units = "mm"),
+                                            title.position = 'top',
+                                            label.position = "bottom",
+                                            title.hjust = 0.5))+
+  theme(legend.position = "bottom")
+
+## ----figureHousing3, fig.cap ="Figure 3: Distribution of RAD across bins of various home value and distance to employment centers", fig.fullwidth=TRUE, fig.height=6, fig.width=8, fig.align='center',fig.pos="H"----
+
+# Create interval variables for medv and dis
+df <- df %>%
+  mutate(medv_bin = factor(paste0("medv in ",
+                                  cut(medv, breaks = seq(0, 50, by = 10), 
+                                      include.lowest = FALSE, right = TRUE)),
+                           levels = paste0("medv in ", 
+                                           cut(seq(50, 1, -10), 
+                                               breaks = seq(0, 50, by = 10),
+                                               include.lowest = FALSE, right = TRUE))),
+         dis_bin = factor(paste0("dis in ",
+                                 cut(dis, breaks = seq(1, 13, by = 2), 
+                                     include.lowest = FALSE, right = TRUE)),
+                          levels = paste0("dis in ", 
+                                          cut(seq(2, 13, 2), 
+                                              breaks = seq(1, 13, by = 2),
+                                              include.lowest = FALSE, right = TRUE))))
+
+ggplot(df, aes(x = rad, y = after_stat(prop))) +
+  geom_bar(fill="cornflowerblue", col="navy", lwd=0.2, alpha=0.7, 
+           width=0.4)+
+  facet_grid(medv_bin ~ dis_bin) +
+  labs(x = "Index of accessibility to radial highways (RAD)", 
+       y = "Proportion", 
+       title = "Distribution of RAD across bins of various home value and distance to employment centers") +
+  theme_minimal() +
+  theme(legend.position = "bottom")+
+  scale_x_continuous(breaks = c(1:9)) 
+
+
+## ----SLGPfitting--------------------------------------------------------------
+library(SLGP)
+
+modelMAP <- slgp(rad~dis+medv, # Use a formula with two indexing variables
+                 data=df,
+                 method="MAP", #Maximum a posteriori estimation scheme
+                 basisFunctionsUsed = "RFF",
+                 interpolateBasisFun="WNN", # Accelerate inference
+                 hyperparams = list(lengthscale=c(0.1, 0.15, 0.15), 
+                                    # Applied to normalised data
+                                    # So 0.15 is 15% of the range of values
+                                    sigma2=1), 
+                 nIntegral = 9, #or length(seq(seq(range_response[1], range_response[2])))
+                 sigmaEstimationMethod = "heuristic", # Set to heuristic for numerical stability                 
+                 predictorsLower= c(range_x[,1]),
+                 predictorsUpper= c(range_x[,2]),
+                 responseRange= range_response,
+                 opts_BasisFun = list(nFreq=150,
+                                      MatParam=5/2))
+
+## ----SLGPplotting1, fig.cap = "Figure 2: Predictive probabilities of rad at medv and dis, as predicted by a SLGP.", fig.fullwidth=TRUE, fig.height=6, fig.width=8, fig.align='center',fig.pos="H"----
+library(viridis)
+dfGrid <- data.frame(expand.grid(seq(range_x[1, 1], range_x[1, 2], 0.5), 
+                                 seq(range_x[2, 1], range_x[2, 2], 1), 
+                                 seq(range_response[1], range_response[2])))
+colnames(dfGrid) <- c("dis", "medv", "rad")
+pred <- predictSLGP_newNode(SLGPmodel=modelMAP,
+                            newNodes = dfGrid,
+                            nIntegral = 9)
+pred[, -c(1:3)] <- pred[, -c(1:3)] * diff(range_response) /(diff(range_response) +1) 
+# Goes from values to integrate over a domain to discrete probabilities
+df_plot <- pred %>%
+  filter(dis %in% seq(2, 12, 2))%>%
+  filter(medv %in% seq(5, 45, 10)) %>%
+  mutate(medv_bin=paste0("medv in (", medv-5,",", medv+5,"]"))%>%
+  mutate(dis_bin=paste0("dis in (", dis-1,",", dis+1,"]"))
+df_counts <- df %>%
+  group_by(medv_bin, dis_bin) %>%
+  summarise(count = paste0("n=", n()), .groups = "keep")
+
+ggplot() +
+  geom_bar(data=df, mapping=aes(x = rad-0.1, y = after_stat(prop)),
+           fill="cornflowerblue", col="navy", lwd=0.2, alpha=0.7, 
+           width=0.4) +
+  geom_col(data=df_plot, mapping=aes(x = rad+0.1, y = pdf_1),
+           col="red", fill="grey", lwd=0.2, alpha=0.7, lty=2, 
+           width=0.4) +
+  geom_text(data=df_counts, mapping=aes(x = 1.5, y = 1, label=count), 
+            col="grey10", size = 3, vjust = 1)+ 
+  facet_grid(medv_bin ~ dis_bin) +
+  labs(x = "Index of accessibility to radial highways (RAD)", 
+       y = "Proportion", 
+       title = "Distribution of RAD across bins of various medv and dis values (blue histogram)\nVS SLGP at the center of these bins") +
+  theme_minimal() +
+  theme(legend.position = "bottom")+
+  scale_x_continuous(breaks = c(1:9)) 
+
