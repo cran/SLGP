@@ -6,10 +6,11 @@ functions {
   vector meanFvalues,
   matrix functionValues,
   vector weightQuadrature,
-  vector multiplicities) {
+  vector multiplicities,
+  vector trendValues) {
     real fx1 = n * dot_product(epsilon, meanFvalues);
 
-    vector[rows(functionValues)] Z = functionValues * epsilon;
+    vector[rows(functionValues)] Z = functionValues * epsilon + trendValues;
     vector[size(multiplicities)] integralValue;
 
     for (i in 1:size(multiplicities)) {
@@ -38,6 +39,7 @@ data {
   vector[nPredictors] multiplicities;
   matrix[p, p] Sigma;      								// Covariance matrix
   vector[p] mean_x;           							// Vector of mean value of the prior
+  vector[nIntegral*nPredictors] trendValues;
 }
 
 parameters {
@@ -48,5 +50,5 @@ model {
   // Priors:
   epsilon ~ multi_normal(mean_x, Sigma);
   // Likelihood:
-  target += custom_simple_lpdf(epsilon | n, nIntegral, nPredictors, meanFvalues, functionValues, weightQuadrature, multiplicities);
+  target += custom_simple_lpdf(epsilon | n, nIntegral, nPredictors, meanFvalues, functionValues, weightQuadrature, multiplicities, trendValues);
 }

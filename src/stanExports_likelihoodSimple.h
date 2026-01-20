@@ -27,48 +27,50 @@ namespace model_likelihoodSimple_namespace {
 using stan::model::model_base_crtp;
 using namespace stan::math;
 stan::math::profile_map profiles__;
-static constexpr std::array<const char*, 39> locations_array__ =
+static constexpr std::array<const char*, 41> locations_array__ =
   {" (found before start of program)",
-  " (in 'string', line 37, column 2 to column 20)",
-  " (in 'string', line 41, column 2 to column 40)",
-  " (in 'string', line 43, column 2 to column 131)",
-  " (in 'string', line 25, column 2 to column 17)",
-  " (in 'string', line 26, column 2 to column 25)",
-  " (in 'string', line 27, column 2 to column 27)",
-  " (in 'string', line 28, column 2 to column 17)",
-  " (in 'string', line 29, column 9 to column 10)",
-  " (in 'string', line 29, column 2 to column 24)",
-  " (in 'string', line 30, column 9 to column 30)",
-  " (in 'string', line 30, column 32 to column 33)",
-  " (in 'string', line 30, column 2 to column 50)",
-  " (in 'string', line 31, column 9 to column 18)",
-  " (in 'string', line 31, column 2 to column 37)",
-  " (in 'string', line 32, column 9 to column 20)",
+  " (in 'string', line 39, column 2 to column 20)",
+  " (in 'string', line 43, column 2 to column 40)",
+  " (in 'string', line 45, column 2 to column 144)",
+  " (in 'string', line 26, column 2 to column 17)",
+  " (in 'string', line 27, column 2 to column 25)",
+  " (in 'string', line 28, column 2 to column 27)",
+  " (in 'string', line 29, column 2 to column 17)",
+  " (in 'string', line 30, column 9 to column 10)",
+  " (in 'string', line 30, column 2 to column 24)",
+  " (in 'string', line 31, column 9 to column 30)",
+  " (in 'string', line 31, column 32 to column 33)",
+  " (in 'string', line 31, column 2 to column 50)",
+  " (in 'string', line 32, column 9 to column 18)",
   " (in 'string', line 32, column 2 to column 37)",
-  " (in 'string', line 33, column 9 to column 10)",
-  " (in 'string', line 33, column 12 to column 13)",
-  " (in 'string', line 33, column 2 to column 21)",
+  " (in 'string', line 33, column 9 to column 20)",
+  " (in 'string', line 33, column 2 to column 37)",
   " (in 'string', line 34, column 9 to column 10)",
-  " (in 'string', line 34, column 2 to column 19)",
-  " (in 'string', line 37, column 9 to column 10)",
-  " (in 'string', line 10, column 4 to column 53)",
-  " (in 'string', line 11, column 11 to column 31)",
-  " (in 'string', line 11, column 4 to column 62)",
+  " (in 'string', line 34, column 12 to column 13)",
+  " (in 'string', line 34, column 2 to column 21)",
+  " (in 'string', line 35, column 9 to column 10)",
+  " (in 'string', line 35, column 2 to column 19)",
+  " (in 'string', line 36, column 9 to column 30)",
+  " (in 'string', line 36, column 2 to column 44)",
+  " (in 'string', line 39, column 9 to column 10)",
+  " (in 'string', line 11, column 4 to column 53)",
   " (in 'string', line 12, column 11 to column 31)",
-  " (in 'string', line 12, column 4 to column 47)",
-  " (in 'string', line 14, column 6 to column 42)",
-  " (in 'string', line 15, column 6 to column 48)",
-  " (in 'string', line 16, column 13 to column 22)",
-  " (in 'string', line 16, column 6 to column 64)",
-  " (in 'string', line 17, column 6 to column 34)",
-  " (in 'string', line 18, column 6 to column 40)",
-  " (in 'string', line 19, column 6 to column 79)",
-  " (in 'string', line 13, column 38 to line 20, column 5)",
-  " (in 'string', line 13, column 4 to line 20, column 5)",
-  " (in 'string', line 21, column 4 to column 60)",
-  " (in 'string', line 9, column 25 to line 22, column 3)"};
+  " (in 'string', line 12, column 4 to column 76)",
+  " (in 'string', line 13, column 11 to column 31)",
+  " (in 'string', line 13, column 4 to column 47)",
+  " (in 'string', line 15, column 6 to column 42)",
+  " (in 'string', line 16, column 6 to column 48)",
+  " (in 'string', line 17, column 13 to column 22)",
+  " (in 'string', line 17, column 6 to column 64)",
+  " (in 'string', line 18, column 6 to column 34)",
+  " (in 'string', line 19, column 6 to column 40)",
+  " (in 'string', line 20, column 6 to column 79)",
+  " (in 'string', line 14, column 38 to line 21, column 5)",
+  " (in 'string', line 14, column 4 to line 21, column 5)",
+  " (in 'string', line 22, column 4 to column 60)",
+  " (in 'string', line 10, column 22 to line 23, column 3)"};
 template <bool propto__, typename T0__, typename T4__, typename T5__,
-          typename T6__, typename T7__,
+          typename T6__, typename T7__, typename T8__,
           stan::require_all_t<stan::is_col_vector<T0__>,
                               stan::is_vt_not_complex<T0__>,
                               stan::is_col_vector<T4__>,
@@ -78,16 +80,20 @@ template <bool propto__, typename T0__, typename T4__, typename T5__,
                               stan::is_col_vector<T6__>,
                               stan::is_vt_not_complex<T6__>,
                               stan::is_col_vector<T7__>,
-                              stan::is_vt_not_complex<T7__>>* = nullptr>
+                              stan::is_vt_not_complex<T7__>,
+                              stan::is_col_vector<T8__>,
+                              stan::is_vt_not_complex<T8__>>* = nullptr>
 stan::promote_args_t<stan::base_type_t<T0__>, stan::base_type_t<T4__>,
-  stan::base_type_t<T5__>, stan::base_type_t<T6__>, stan::base_type_t<T7__>>
+  stan::base_type_t<T5__>, stan::base_type_t<T6__>, stan::base_type_t<T7__>,
+  stan::promote_args_t<stan::base_type_t<T8__>>>
 custom_simple_lpdf(const T0__& epsilon_arg__, const int& n, const int&
                    nIntegral, const int& nPredictors, const T4__&
                    meanFvalues_arg__, const T5__& functionValues_arg__,
                    const T6__& weightQuadrature_arg__, const T7__&
-                   multiplicities_arg__, std::ostream* pstream__);
+                   multiplicities_arg__, const T8__& trendValues_arg__,
+                   std::ostream* pstream__);
 template <bool propto__, typename T0__, typename T4__, typename T5__,
-          typename T6__, typename T7__,
+          typename T6__, typename T7__, typename T8__,
           stan::require_all_t<stan::is_col_vector<T0__>,
                               stan::is_vt_not_complex<T0__>,
                               stan::is_col_vector<T4__>,
@@ -97,80 +103,87 @@ template <bool propto__, typename T0__, typename T4__, typename T5__,
                               stan::is_col_vector<T6__>,
                               stan::is_vt_not_complex<T6__>,
                               stan::is_col_vector<T7__>,
-                              stan::is_vt_not_complex<T7__>>*>
+                              stan::is_vt_not_complex<T7__>,
+                              stan::is_col_vector<T8__>,
+                              stan::is_vt_not_complex<T8__>>*>
 stan::promote_args_t<stan::base_type_t<T0__>, stan::base_type_t<T4__>,
-  stan::base_type_t<T5__>, stan::base_type_t<T6__>, stan::base_type_t<T7__>>
+  stan::base_type_t<T5__>, stan::base_type_t<T6__>, stan::base_type_t<T7__>,
+  stan::promote_args_t<stan::base_type_t<T8__>>>
 custom_simple_lpdf(const T0__& epsilon_arg__, const int& n, const int&
                    nIntegral, const int& nPredictors, const T4__&
                    meanFvalues_arg__, const T5__& functionValues_arg__,
                    const T6__& weightQuadrature_arg__, const T7__&
-                   multiplicities_arg__, std::ostream* pstream__) {
+                   multiplicities_arg__, const T8__& trendValues_arg__,
+                   std::ostream* pstream__) {
   using local_scalar_t__ = stan::promote_args_t<stan::base_type_t<T0__>,
                              stan::base_type_t<T4__>,
                              stan::base_type_t<T5__>,
                              stan::base_type_t<T6__>,
-                             stan::base_type_t<T7__>>;
+                             stan::base_type_t<T7__>,
+                             stan::promote_args_t<stan::base_type_t<T8__>>>;
   int current_statement__ = 0;
   const auto& epsilon = stan::math::to_ref(epsilon_arg__);
   const auto& meanFvalues = stan::math::to_ref(meanFvalues_arg__);
   const auto& functionValues = stan::math::to_ref(functionValues_arg__);
   const auto& weightQuadrature = stan::math::to_ref(weightQuadrature_arg__);
   const auto& multiplicities = stan::math::to_ref(multiplicities_arg__);
+  const auto& trendValues = stan::math::to_ref(trendValues_arg__);
   local_scalar_t__ DUMMY_VAR__(std::numeric_limits<double>::quiet_NaN());
   // suppress unused var warning
   (void) DUMMY_VAR__;
   try {
     local_scalar_t__ fx1 = DUMMY_VAR__;
-    current_statement__ = 23;
+    current_statement__ = 25;
     fx1 = (n * stan::math::dot_product(epsilon, meanFvalues));
-    current_statement__ = 24;
+    current_statement__ = 26;
     stan::math::validate_non_negative_index("Z", "rows(functionValues)",
       stan::math::rows(functionValues));
     Eigen::Matrix<local_scalar_t__,-1,1> Z =
       Eigen::Matrix<local_scalar_t__,-1,1>::Constant(stan::math::rows(
                                                        functionValues),
         DUMMY_VAR__);
-    current_statement__ = 25;
-    stan::model::assign(Z, stan::math::multiply(functionValues, epsilon),
-      "assigning variable Z");
-    current_statement__ = 26;
+    current_statement__ = 27;
+    stan::model::assign(Z,
+      stan::math::add(stan::math::multiply(functionValues, epsilon),
+        trendValues), "assigning variable Z");
+    current_statement__ = 28;
     stan::math::validate_non_negative_index("integralValue",
       "size(multiplicities)", stan::math::size(multiplicities));
     Eigen::Matrix<local_scalar_t__,-1,1> integralValue =
       Eigen::Matrix<local_scalar_t__,-1,1>::Constant(stan::math::size(
                                                        multiplicities),
         DUMMY_VAR__);
-    current_statement__ = 36;
+    current_statement__ = 38;
     for (int i = 1; i <= stan::math::size(multiplicities); ++i) {
       int start = std::numeric_limits<int>::min();
-      current_statement__ = 28;
+      current_statement__ = 30;
       start = (1 + ((i - 1) * nIntegral));
       int end = std::numeric_limits<int>::min();
-      current_statement__ = 29;
+      current_statement__ = 31;
       end = (nIntegral + ((i - 1) * nIntegral));
-      current_statement__ = 30;
+      current_statement__ = 32;
       stan::math::validate_non_negative_index("segmentZ", "nIntegral",
         nIntegral);
       Eigen::Matrix<local_scalar_t__,-1,1> segmentZ =
         Eigen::Matrix<local_scalar_t__,-1,1>::Constant(nIntegral,
           DUMMY_VAR__);
-      current_statement__ = 31;
+      current_statement__ = 33;
       stan::model::assign(segmentZ, stan::math::segment(Z, start, nIntegral),
         "assigning variable segmentZ");
       local_scalar_t__ maxVal = DUMMY_VAR__;
-      current_statement__ = 32;
+      current_statement__ = 34;
       maxVal = stan::math::max(segmentZ);
-      current_statement__ = 33;
+      current_statement__ = 35;
       stan::model::assign(segmentZ,
         stan::math::exp(
           stan::math::subtract(stan::model::deep_copy(segmentZ), maxVal)),
         "assigning variable segmentZ");
-      current_statement__ = 34;
+      current_statement__ = 36;
       stan::model::assign(integralValue, (maxVal +
         stan::math::log(stan::math::dot_product(segmentZ, weightQuadrature))),
         "assigning variable integralValue", stan::model::index_uni(i));
     }
-    current_statement__ = 37;
+    current_statement__ = 39;
     return (fx1 - stan::math::dot_product(integralValue, multiplicities));
   } catch (const std::exception& e) {
     stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -189,12 +202,14 @@ private:
   Eigen::Matrix<double,-1,1> multiplicities_data__;
   Eigen::Matrix<double,-1,-1> Sigma_data__;
   Eigen::Matrix<double,-1,1> mean_x_data__;
+  Eigen::Matrix<double,-1,1> trendValues_data__;
   Eigen::Map<Eigen::Matrix<double,-1,1>> meanFvalues{nullptr, 0};
   Eigen::Map<Eigen::Matrix<double,-1,-1>> functionValues{nullptr, 0, 0};
   Eigen::Map<Eigen::Matrix<double,-1,1>> weightQuadrature{nullptr, 0};
   Eigen::Map<Eigen::Matrix<double,-1,1>> multiplicities{nullptr, 0};
   Eigen::Map<Eigen::Matrix<double,-1,-1>> Sigma{nullptr, 0, 0};
   Eigen::Map<Eigen::Matrix<double,-1,1>> mean_x{nullptr, 0};
+  Eigen::Map<Eigen::Matrix<double,-1,1>> trendValues{nullptr, 0};
 public:
   ~model_likelihoodSimple() {}
   model_likelihoodSimple(stan::io::var_context& context__, unsigned int
@@ -419,6 +434,33 @@ public:
         }
       }
       current_statement__ = 22;
+      stan::math::validate_non_negative_index("trendValues",
+        "nIntegral * nPredictors", (nIntegral * nPredictors));
+      current_statement__ = 23;
+      context__.validate_dims("data initialization", "trendValues", "double",
+        std::vector<size_t>{static_cast<size_t>((nIntegral * nPredictors))});
+      trendValues_data__ = Eigen::Matrix<double,-1,1>::Constant((nIntegral *
+                             nPredictors),
+                             std::numeric_limits<double>::quiet_NaN());
+      new (&trendValues)
+        Eigen::Map<Eigen::Matrix<double,-1,1>>(trendValues_data__.data(),
+        (nIntegral * nPredictors));
+      {
+        std::vector<local_scalar_t__> trendValues_flat__;
+        current_statement__ = 23;
+        trendValues_flat__ = context__.vals_r("trendValues");
+        current_statement__ = 23;
+        pos__ = 1;
+        current_statement__ = 23;
+        for (int sym1__ = 1; sym1__ <= (nIntegral * nPredictors); ++sym1__) {
+          current_statement__ = 23;
+          stan::model::assign(trendValues, trendValues_flat__[(pos__ - 1)],
+            "assigning variable trendValues", stan::model::index_uni(sym1__));
+          current_statement__ = 23;
+          pos__ = (pos__ + 1);
+        }
+      }
+      current_statement__ = 24;
       stan::math::validate_non_negative_index("epsilon", "p", p);
     } catch (const std::exception& e) {
       stan::lang::rethrow_located(e, locations_array__[current_statement__]);
@@ -463,7 +505,8 @@ public:
         current_statement__ = 3;
         lp_accum__.add(custom_simple_lpdf<false>(epsilon, n, nIntegral,
                          nPredictors, meanFvalues, functionValues,
-                         weightQuadrature, multiplicities, pstream__));
+                         weightQuadrature, multiplicities, trendValues,
+                         pstream__));
       }
     } catch (const std::exception& e) {
       stan::lang::rethrow_located(e, locations_array__[current_statement__]);

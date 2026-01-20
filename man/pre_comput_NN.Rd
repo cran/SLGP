@@ -9,7 +9,7 @@ pre_comput_NN(
   predictorNames,
   responseName,
   nIntegral = 101,
-  nDiscret = 51
+  nDiscret = 101
 )
 }
 \arguments{

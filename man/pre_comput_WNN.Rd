@@ -9,7 +9,8 @@ pre_comput_WNN(
   predictorNames,
   responseName,
   nIntegral = 101,
-  nDiscret = 51
+  nDiscret = 101,
+  mode = "pdf"
 )
 }
 \arguments{

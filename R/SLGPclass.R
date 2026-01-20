@@ -28,6 +28,7 @@
 #' @slot hyperparams A \code{list} of hyperparameters, including:
 #'   - \code{sigma}: numeric signal standard deviation;
 #'   - \code{lengthscale}: a vector of lengthscales for each input dimension.
+#' @slot trend A \code{function} that returns the trend of the transformed GP (not to be estimated).
 #' @slot logPost A \code{numeric} value representing the (unnormalized) log-posterior of the model.
 #'   Currently available only for MAP and Laplace-trained models.
 #'
@@ -41,6 +42,7 @@ SLGP <- setClass(
     covariateName = "character",
     responseRange = "numeric",
     predictorsRange = "list",
+    trend = "function",
     method = "character",
     p = "numeric",
     basisFunctionsUsed = "character",

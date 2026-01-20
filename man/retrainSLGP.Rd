@@ -10,12 +10,13 @@ retrainSLGP(
   epsilonStart = NULL,
   method,
   interpolateBasisFun = "WNN",
-  nIntegral = 51,
-  nDiscret = 51,
+  nIntegral = 101,
+  nDiscret = 101,
   hyperparams = NULL,
   sigmaEstimationMethod = "none",
   seed = NULL,
   opts = list(),
+  trend = NULL,
   verbose = FALSE
 )
 }
@@ -52,6 +53,8 @@ either \code{"none"} (default) or \code{"heuristic"}.}
 
 \item{opts}{Optional list of additional options passed to inference routines:
 \code{stan_chains}, \code{stan_iter}, \code{ndraws}, etc.}
+
+\item{trend}{Optional a function that returns the trend of the transformed GP (not to be estimated). If not provided, it defaults to 0.}
 
 \item{verbose}{Logical; if \code{TRUE}, print progress and diagnostic messages during computation.
 Defaults to \code{FALSE}.}

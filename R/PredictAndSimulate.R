@@ -9,6 +9,7 @@
 #'   one of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).
 #' @param nDiscret Integer specifying the discretization step for interpolation (only used if applicable).
 #' @param nIntegral Integer specifying the number of quadrature points over the response space.
+#' @param normalise Boolean, indicates if we return normalised or unnormalised pdfs. (defaults to TRUE)
 #'
 #' @return A data frame combining \code{newNodes} with columns named \code{pdf_1}, \code{pdf_2}, ...,
 #' representing the posterior predictive density for each sample of the SLGP.
@@ -53,7 +54,8 @@ predictSLGP_newNode <- function(SLGPmodel,
                                 newNodes,
                                 interpolateBasisFun = "WNN",
                                 nIntegral=101,
-                                nDiscret=101) {
+                                nDiscret=101,
+                                normalise = TRUE) {
   predictorNames <- SLGPmodel@covariateName
   responseName <-  SLGPmodel@responseName
 
@@ -93,17 +95,37 @@ predictSLGP_newNode <- function(SLGPmodel,
   functionValues <- evaluate_basis_functions(parameters=initBasisFun,
                                              X=intermediateQuantities$nodes,
                                              lengthscale=lengthscale)
+  trend <- SLGPmodel@trend
+  if(is.null(trend)){
+    trend <- function(df){return(rep(0, nrow(df)))}
+    trendValues <- rep(0, nrow(functionValues))
+  }else{
+    predictorsUpper <- SLGPmodel@predictorsRange$upper
+    predictorsLower <- SLGPmodel@predictorsRange$lower
+    responseRange <- SLGPmodel@responseRange
+    dftrend <- as.data.frame(t(t(as.matrix(intermediateQuantities$nodes))*
+                                 c(responseRange[2]-responseRange[1],
+                                   predictorsUpper - predictorsLower)+
+                                 c(responseRange[1], predictorsLower)))
+    colnames(dftrend) <- c(responseName, predictorNames)
+    trendValues <- trend(df=dftrend)
+    rm(dftrend)
+  }
+
   epsilon <- SLGPmodel@coefficients
-  GPvalues <-functionValues %*% t(epsilon)
+  GPvalues <- functionValues %*% t(epsilon) + trendValues
   domain_size <- diff(SLGPmodel@responseRange)
 
+  quad_w <- rep(1/(nIntegral-1), nIntegral)
+  quad_w[c(1, nIntegral)] <- quad_w[c(1, nIntegral)]/2
   SLGPvalues<-sapply(seq(ncol(GPvalues)), function(i){
     unlist(tapply(GPvalues[, i], intermediateQuantities$indNodesToIntegral, function(x){
       maxval <- max(x)
       res<- exp(x-maxval)
-      return(res/mean(res)/domain_size)
+      return(res/sum(res*quad_w)/domain_size)
     }))
   })
+
   res<- sapply(seq(ncol(GPvalues)), function(i){
     unname(rowSums(sapply(seq(ncol(intermediateQuantities$indSamplesToNodes)), function(j){
       return(SLGPvalues[intermediateQuantities$indSamplesToNodes[, j], i]*
@@ -199,7 +221,8 @@ predictSLGP_cdf <- function(SLGPmodel,
                                              predictorNames=predictorNames,
                                              responseName=responseName,
                                              nIntegral=nIntegral,
-                                             nDiscret=nDiscret)
+                                             nDiscret=nDiscret,
+                                             mode="cdf")
   }
   dimension <- length(predictorNames)+1
   opts_BasisFun <- SLGPmodel@opts_BasisFun
@@ -210,27 +233,65 @@ predictSLGP_cdf <- function(SLGPmodel,
   functionValues <- evaluate_basis_functions(parameters=initBasisFun,
                                              X=intermediateQuantities$nodes,
                                              lengthscale=lengthscale)
+  trend <- SLGPmodel@trend
+  if(is.null(trend)){
+    trend <- function(df){return(rep(0, nrow(df)))}
+    trendValues <- rep(0, nrow(functionValues))
+  }else{
+    predictorsUpper <- SLGPmodel@predictorsRange$upper
+    predictorsLower <- SLGPmodel@predictorsRange$lower
+    responseRange <- SLGPmodel@responseRange
+    dftrend <- as.data.frame(t(t(as.matrix(intermediateQuantities$nodes))*
+                                 c(responseRange[2]-responseRange[1],
+                                   predictorsUpper - predictorsLower)+
+                                 c(responseRange[1], predictorsLower)))
+    colnames(dftrend) <- c(responseName, predictorNames)
+    trendValues <- trend(df=dftrend)
+    rm(dftrend)
+  }
   epsilon <- SLGPmodel@coefficients
-  GPvalues <-functionValues %*% t(epsilon)
-  domain_size <- diff(SLGPmodel@responseRange)
+  GPvalues <-functionValues %*% t(epsilon) + trendValues
 
-  SLGPcvalues<-sapply(seq(ncol(GPvalues)), function(i){
-    unlist(tapply(GPvalues[, i], intermediateQuantities$indNodesToIntegral, function(x){
-      maxval <- max(x)
-      pdf<- exp(x-maxval)
-      cdf<- cumsum(pdf)
-      cdf<- cdf-min(cdf)
-      cdf<- cdf / diff(range(cdf))
-      return(cdf)
-    }))
-  })
-  intermediateQuantities$indSamplesToNodes[is.na(intermediateQuantities$indSamplesToNodes)]<- 1
-  res<- sapply(seq(ncol(SLGPcvalues)), function(i){
-    unname(rowSums(sapply(seq(ncol(intermediateQuantities$indSamplesToNodes)), function(j){
-      return(SLGPcvalues[intermediateQuantities$indSamplesToNodes[, j], i]*
-               intermediateQuantities$weightSamplesToNodes[, j])
-    }), na.rm = TRUE))
-  })
+  domain_size <- diff(SLGPmodel@responseRange)
+  quad_w <- rep(1/(nIntegral-1), nIntegral)*domain_size
+  quad_w[c(1, nIntegral)] <- quad_w[c(1, nIntegral)]/2
+
+  if(interpolateBasisFun =="WNN"){
+    SLGPvalues<-sapply(seq(ncol(GPvalues)), function(i){
+      unlist(tapply(GPvalues[, i], intermediateQuantities$indNodesToIntegral, function(x){
+        maxval <- max(x)
+        res<- exp(x-maxval)
+        return(res/sum(res*quad_w))
+      }))
+    })
+
+    res<- sapply(seq(ncol(SLGPvalues)), function(i){
+      unname(rowSums(sapply(seq(ncol(intermediateQuantities$indSamplesToNodesCDF)), function(j){
+        return(SLGPvalues[intermediateQuantities$indSamplesToNodesCDF[, j], i]*
+                 intermediateQuantities$weightSamplesToNodesCDF[, j]*domain_size)
+      }), na.rm = TRUE))
+    })
+
+  }else{
+    SLGPcvalues<-sapply(seq(ncol(GPvalues)), function(i){
+      unlist(tapply(GPvalues[, i], intermediateQuantities$indNodesToIntegral, function(x){
+        maxval <- max(x)
+        pdf<- exp(x-maxval)
+        cdf<- cumsum(pdf*quad_w)
+        cdf<- cdf-min(cdf)
+        cdf<- cdf / diff(range(cdf))
+        return(cdf)
+      }))
+    })
+    intermediateQuantities$indSamplesToNodes[is.na(intermediateQuantities$indSamplesToNodes)]<- 1
+    res<- sapply(seq(ncol(SLGPcvalues)), function(i){
+      unname(rowSums(sapply(seq(ncol(intermediateQuantities$indSamplesToNodes)), function(j){
+        return(SLGPcvalues[intermediateQuantities$indSamplesToNodes[, j], i]*
+                 intermediateQuantities$weightSamplesToNodes[, j])
+      }), na.rm = TRUE))
+    })
+  }
+
   colnames(res) <- paste0("cdf_", seq(ncol(res)))
   res<- cbind(newNodes, res)
   return(res)
@@ -339,15 +400,34 @@ predictSLGP_quantiles <- function(SLGPmodel,
   functionValues <- evaluate_basis_functions(parameters=initBasisFun,
                                              X=intermediateQuantities$nodes,
                                              lengthscale=lengthscale)
+  trend <- SLGPmodel@trend
+  if(is.null(trend)){
+    trend <- function(df){return(rep(0, nrow(df)))}
+    trendValues <- rep(0, nrow(functionValues))
+  }else{
+    predictorsUpper <- SLGPmodel@predictorsRange$upper
+    predictorsLower <- SLGPmodel@predictorsRange$lower
+    responseRange <- SLGPmodel@responseRange
+    dftrend <- as.data.frame(t(t(as.matrix(intermediateQuantities$nodes))*
+                                 c(responseRange[2]-responseRange[1],
+                                   predictorsUpper - predictorsLower)+
+                                 c(responseRange[1], predictorsLower)))
+    colnames(dftrend) <- c(responseName, predictorNames)
+    trendValues <- trend(df=dftrend)
+    rm(dftrend)
+  }
+
   epsilon <- SLGPmodel@coefficients
-  GPvalues <-functionValues %*% t(epsilon)
+  GPvalues <-functionValues %*% t(epsilon) + trendValues
   domain_size <- diff(SLGPmodel@responseRange)
 
+  quad_w <- rep(1/(nIntegral-1), nIntegral)
+  quad_w[c(1, nIntegral)] <- quad_w[c(1, nIntegral)]/2
   SLGPcvalues<-sapply(seq(ncol(GPvalues)), function(i){
     unlist(tapply(GPvalues[, i], intermediateQuantities$indNodesToIntegral, function(x){
       maxval <- max(x)
       pdf<- exp(x-maxval)
-      cdf<- cumsum(pdf)
+      cdf<- cumsum(pdf*quad_w)
       cdf<- cdf-min(cdf)
       cdf<- cdf / diff(range(cdf))
       return(cdf)
@@ -477,15 +557,33 @@ predictSLGP_moments <- function(SLGPmodel,
   functionValues <- evaluate_basis_functions(parameters=initBasisFun,
                                              X=intermediateQuantities$nodes,
                                              lengthscale=lengthscale)
+  trend <- SLGPmodel@trend
+  if(is.null(trend)){
+    trend <- function(df){return(rep(0, nrow(df)))}
+    trendValues <- rep(0, nrow(functionValues))
+  }else{
+    predictorsUpper <- SLGPmodel@predictorsRange$upper
+    predictorsLower <- SLGPmodel@predictorsRange$lower
+    responseRange <- SLGPmodel@responseRange
+    dftrend <- as.data.frame(t(t(as.matrix(intermediateQuantities$nodes))*
+                                 c(responseRange[2]-responseRange[1],
+                                   predictorsUpper - predictorsLower)+
+                                 c(responseRange[1], predictorsLower)))
+    colnames(dftrend) <- c(responseName, predictorNames)
+    trendValues <- trend(df=dftrend)
+    rm(dftrend)
+  }
   epsilon <- SLGPmodel@coefficients
-  GPvalues <-functionValues %*% t(epsilon)
+  GPvalues <-functionValues %*% t(epsilon)+trendValues
   domain_size <- diff(SLGPmodel@responseRange)
 
+  quad_w <- rep(1/(nIntegral-1), nIntegral)
+  quad_w[c(1, nIntegral)] <- quad_w[c(1, nIntegral)]/2
   SLGPvalues<-sapply(seq(ncol(GPvalues)), function(i){
     unlist(tapply(GPvalues[, i], intermediateQuantities$indNodesToIntegral, function(x){
       maxval <- max(x)
       res<- exp(x-maxval)
-      return(res/mean(res)/domain_size)
+      return(res/sum(res*quad_w)/domain_size)
     }))
   })
   res<- sapply(seq(ncol(GPvalues)), function(i){
@@ -596,6 +694,7 @@ sampleSLGP <- function(SLGPmodel,
   grid <- expand.grid(u, seq(npred))
   grid <- data.frame(cbind(grid[, 1], newX[grid[, 2], ]))
   colnames(grid)<- c(SLGPmodel@responseName, colnames(newX))
+
 
   cdfs <- predictSLGP_cdf(SLGPmodel=SLGPmodel,
                           newNodes=grid,

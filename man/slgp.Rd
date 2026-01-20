@@ -11,8 +11,8 @@ slgp(
   method,
   basisFunctionsUsed,
   interpolateBasisFun = "NN",
-  nIntegral = 51,
-  nDiscret = 51,
+  nIntegral = 101,
+  nDiscret = 101,
   hyperparams = NULL,
   predictorsUpper = NULL,
   predictorsLower = NULL,
@@ -22,6 +22,7 @@ slgp(
   opts_BasisFun = list(),
   BasisFunParam = NULL,
   opts = list(),
+  trend = NULL,
   verbose = FALSE
 )
 }
@@ -67,6 +68,8 @@ Either "none" (default) or "heuristic".}
 \item{BasisFunParam}{Optional list of precomputed basis function parameters.}
 
 \item{opts}{Optional list of extra settings passed to inference routines (e.g., \code{stan_iter}, \code{stan_chains}, \code{ndraws}).}
+
+\item{trend}{Optional a function that returns the trend of the transformed GP (not to be estimated). If not provided, it defaults to 0.}
 
 \item{verbose}{Logical; if \code{TRUE}, print progress and diagnostic messages during computation.
 Defaults to \code{FALSE}.}

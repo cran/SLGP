@@ -8,7 +8,7 @@ pre_comput_nothing(
   normalizedData,
   predictorNames,
   responseName,
-  nIntegral = 51
+  nIntegral = 101
 )
 }
 \arguments{

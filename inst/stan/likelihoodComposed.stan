@@ -7,8 +7,9 @@ functions {
   matrix functionValues,
   matrix weightMatrix,
   int[,] indMatrix,
-  vector weightQuadrature) {
-    vector[rows(functionValues)] Z = functionValues * epsilon;
+  vector weightQuadrature,
+  vector trendValues) {
+    vector[rows(functionValues)] Z = functionValues * epsilon + trendValues;
     vector[rows(functionValues)] SLGP;
 
     for (i in 1:nPredictors) {
@@ -49,6 +50,7 @@ data {
   vector[nIntegral] weightQuadrature;
   matrix[p, p] Sigma;      								// Covariance matrix
   vector[p] mean_x;           							// Vector of mean value of the prior
+  vector[nIntegral*nPredictors] trendValues;
 }
 
 parameters {
@@ -59,5 +61,5 @@ model {
   // Priors:
   epsilon ~ multi_normal(mean_x, Sigma);
   // Likelihood:
-  target += custom_composed_lpdf(epsilon | n, nIntegral, nPredictors, nNeigh, functionValues, weightMatrix, indMatrix, weightQuadrature);
+  target += custom_composed_lpdf(epsilon | n, nIntegral, nPredictors, nNeigh, functionValues, weightMatrix, indMatrix, weightQuadrature, trendValues);
 }

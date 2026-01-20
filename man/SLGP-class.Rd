@@ -52,6 +52,8 @@ Each row corresponds to a realization of the latent field:
 \item \code{lengthscale}: a vector of lengthscales for each input dimension.
 }}
 
+\item{\code{trend}}{A \code{function} that returns the trend of the transformed GP (not to be estimated).}
+
 \item{\code{logPost}}{A \code{numeric} value representing the (unnormalized) log-posterior of the model.
 Currently available only for MAP and Laplace-trained models.}
 }}

@@ -9,7 +9,8 @@ predictSLGP_newNode(
   newNodes,
   interpolateBasisFun = "WNN",
   nIntegral = 101,
-  nDiscret = 101
+  nDiscret = 101,
+  normalise = TRUE
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ one of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).}
 \item{nIntegral}{Integer specifying the number of quadrature points over the response space.}
 
 \item{nDiscret}{Integer specifying the discretization step for interpolation (only used if applicable).}
+
+\item{normalise}{Boolean, indicates if we return normalised or unnormalised pdfs. (defaults to TRUE)}
 }
 \value{
 A data frame combining \code{newNodes} with columns named \code{pdf_1}, \code{pdf_2}, ...,
