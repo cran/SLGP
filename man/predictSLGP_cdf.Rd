@@ -9,7 +9,8 @@ predictSLGP_cdf(
   newNodes,
   interpolateBasisFun = "WNN",
   nIntegral = 101,
-  nDiscret = 101
+  nDiscret = 101,
+  discrete = FALSE
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ one of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).}
 \item{nIntegral}{Number of integration points along the response axis.}
 
 \item{nDiscret}{Discretization resolution for interpolation (optional).}
+
+\item{discrete}{Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities}
 }
 \value{
 A data frame with \code{newNodes} and predicted CDF values, columns named \code{cdf_1}, \code{cdf_2}, ...

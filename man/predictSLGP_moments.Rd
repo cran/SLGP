@@ -11,7 +11,8 @@ predictSLGP_moments(
   centered = FALSE,
   interpolateBasisFun = "WNN",
   nIntegral = 101,
-  nDiscret = 101
+  nDiscret = 101,
+  discrete = FALSE
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ predictSLGP_moments(
 \item{nIntegral}{Number of integration points for computing densities.}
 
 \item{nDiscret}{Discretization resolution of the response space.}
+
+\item{discrete}{Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities}
 }
 \value{
 A data frame with:

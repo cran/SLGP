@@ -10,6 +10,7 @@
 #' @param nDiscret Integer specifying the discretization step for interpolation (only used if applicable).
 #' @param nIntegral Integer specifying the number of quadrature points over the response space.
 #' @param normalise Boolean, indicates if we return normalised or unnormalised pdfs. (defaults to TRUE)
+#' @param discrete Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities
 #'
 #' @return A data frame combining \code{newNodes} with columns named \code{pdf_1}, \code{pdf_2}, ...,
 #' representing the posterior predictive density for each sample of the SLGP.
@@ -55,7 +56,8 @@ predictSLGP_newNode <- function(SLGPmodel,
                                 interpolateBasisFun = "WNN",
                                 nIntegral=101,
                                 nDiscret=101,
-                                normalise = TRUE) {
+                                normalise = TRUE,
+                                discrete = TRUE) {
   predictorNames <- SLGPmodel@covariateName
   responseName <-  SLGPmodel@responseName
 
@@ -114,10 +116,15 @@ predictSLGP_newNode <- function(SLGPmodel,
 
   epsilon <- SLGPmodel@coefficients
   GPvalues <- functionValues %*% t(epsilon) + trendValues
-  domain_size <- diff(SLGPmodel@responseRange)
 
-  quad_w <- rep(1/(nIntegral-1), nIntegral)
-  quad_w[c(1, nIntegral)] <- quad_w[c(1, nIntegral)]/2
+  if(!discrete){
+    quad_w <- rep(1/(nIntegral-1), nIntegral)
+    quad_w[c(1, nIntegral)] <- quad_w[c(1, nIntegral)]/2
+    domain_size <- diff(SLGPmodel@responseRange)
+  }else{
+    quad_w <- rep(1, nIntegral)
+    domain_size <- 1
+  }
   SLGPvalues<-sapply(seq(ncol(GPvalues)), function(i){
     unlist(tapply(GPvalues[, i], intermediateQuantities$indNodesToIntegral, function(x){
       maxval <- max(x)
@@ -148,6 +155,7 @@ predictSLGP_newNode <- function(SLGPmodel,
 #'   one of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).
 #' @param nDiscret Discretization resolution for interpolation (optional).
 #' @param nIntegral Number of integration points along the response axis.
+#' @param discrete Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities
 #'
 #' @return A data frame with \code{newNodes} and predicted CDF values, columns named \code{cdf_1}, \code{cdf_2}, ...
 #'
@@ -192,7 +200,8 @@ predictSLGP_cdf <- function(SLGPmodel,
                             newNodes,
                             interpolateBasisFun = "WNN",
                             nIntegral=101,
-                            nDiscret=101) {
+                            nDiscret=101,
+                            discrete=FALSE) {
   predictorNames <- SLGPmodel@covariateName
   responseName <-  SLGPmodel@responseName
 
@@ -252,9 +261,14 @@ predictSLGP_cdf <- function(SLGPmodel,
   epsilon <- SLGPmodel@coefficients
   GPvalues <-functionValues %*% t(epsilon) + trendValues
 
-  domain_size <- diff(SLGPmodel@responseRange)
-  quad_w <- rep(1/(nIntegral-1), nIntegral)*domain_size
-  quad_w[c(1, nIntegral)] <- quad_w[c(1, nIntegral)]/2
+  if(!discrete){
+    quad_w <- rep(1/(nIntegral-1), nIntegral)
+    quad_w[c(1, nIntegral)] <- quad_w[c(1, nIntegral)]/2
+    domain_size <- diff(SLGPmodel@responseRange)
+  }else{
+    quad_w <- rep(1, nIntegral)
+    domain_size <- 1
+  }
 
   if(interpolateBasisFun =="WNN"){
     SLGPvalues<-sapply(seq(ncol(GPvalues)), function(i){
@@ -308,6 +322,7 @@ predictSLGP_cdf <- function(SLGPmodel,
 #' @param interpolateBasisFun Character string specifying interpolation scheme: \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).
 #' @param nDiscret Discretization level of the response axis (for CDF inversion).
 #' @param nIntegral Number of integration points for computing the SLGP outputs.
+#' @param discrete Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities
 #'
 #' @return A data frame with columns:
 #'   \itemize{
@@ -352,7 +367,8 @@ predictSLGP_quantiles <- function(SLGPmodel,
                                   probs,
                                   interpolateBasisFun = "WNN",
                                   nIntegral=101,
-                                  nDiscret=101) {
+                                  nDiscret=101,
+                                  discrete=FALSE) {
   predictorNames <- SLGPmodel@covariateName
   responseName <-  SLGPmodel@responseName
 
@@ -419,10 +435,14 @@ predictSLGP_quantiles <- function(SLGPmodel,
 
   epsilon <- SLGPmodel@coefficients
   GPvalues <-functionValues %*% t(epsilon) + trendValues
-  domain_size <- diff(SLGPmodel@responseRange)
-
-  quad_w <- rep(1/(nIntegral-1), nIntegral)
-  quad_w[c(1, nIntegral)] <- quad_w[c(1, nIntegral)]/2
+  if(!discrete){
+    quad_w <- rep(1/(nIntegral-1), nIntegral)
+    quad_w[c(1, nIntegral)] <- quad_w[c(1, nIntegral)]/2
+    domain_size <- diff(SLGPmodel@responseRange)
+  }else{
+    quad_w <- rep(1, nIntegral)
+    domain_size <- 1
+  }
   SLGPcvalues<-sapply(seq(ncol(GPvalues)), function(i){
     unlist(tapply(GPvalues[, i], intermediateQuantities$indNodesToIntegral, function(x){
       maxval <- max(x)
@@ -463,6 +483,7 @@ predictSLGP_quantiles <- function(SLGPmodel,
 #' @param interpolateBasisFun Interpolation mode for basis functions: \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).
 #' @param nDiscret Discretization resolution of the response space.
 #' @param nIntegral Number of integration points for computing densities.
+#' @param discrete Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities
 #'
 #' @return A data frame with:
 #'   \itemize{
@@ -509,7 +530,8 @@ predictSLGP_moments <- function(SLGPmodel,
                                 centered=FALSE,
                                 interpolateBasisFun = "WNN",
                                 nIntegral=101,
-                                nDiscret=101) {
+                                nDiscret=101,
+                                discrete=FALSE) {
   predictorNames <- SLGPmodel@covariateName
   responseName <-  SLGPmodel@responseName
 
@@ -575,10 +597,14 @@ predictSLGP_moments <- function(SLGPmodel,
   }
   epsilon <- SLGPmodel@coefficients
   GPvalues <-functionValues %*% t(epsilon)+trendValues
-  domain_size <- diff(SLGPmodel@responseRange)
-
-  quad_w <- rep(1/(nIntegral-1), nIntegral)
-  quad_w[c(1, nIntegral)] <- quad_w[c(1, nIntegral)]/2
+  if(!discrete){
+    quad_w <- rep(1/(nIntegral-1), nIntegral)
+    quad_w[c(1, nIntegral)] <- quad_w[c(1, nIntegral)]/2
+    domain_size <- diff(SLGPmodel@responseRange)
+  }else{
+    quad_w <- rep(1, nIntegral)
+    domain_size <- 1
+  }
   SLGPvalues<-sapply(seq(ncol(GPvalues)), function(i){
     unlist(tapply(GPvalues[, i], intermediateQuantities$indNodesToIntegral, function(x){
       maxval <- max(x)
@@ -630,6 +656,7 @@ predictSLGP_moments <- function(SLGPmodel,
 #' @param nDiscret Integer; discretization step for the response axis.
 #' @param nIntegral Integer; number of quadrature points for density approximation.
 #' @param seed Optional integer to set a random seed for reproducibility.
+#' @param discrete Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities
 #'
 #' @return A data frame containing sampled responses from the SLGP model, with covariate columns from \code{newX}
 #' and one response column named after \code{SLGPmodel@responseName}.
@@ -671,7 +698,8 @@ sampleSLGP <- function(SLGPmodel,
                        interpolateBasisFun = "WNN",
                        nIntegral=101,
                        nDiscret=101,
-                       seed=NULL) {
+                       seed=NULL,
+                       discrete=FALSE) {
   if (!requireNamespace("GoFKernel", quietly = TRUE)) {
     stop("Package 'GoFKernel' could not be used")
   }
@@ -700,7 +728,8 @@ sampleSLGP <- function(SLGPmodel,
                           newNodes=grid,
                           interpolateBasisFun = interpolateBasisFun,
                           nIntegral=nIntegral,
-                          nDiscret=nDiscret)
+                          nDiscret=nDiscret,
+                          discrete=discrete)
   mean_cdfs <- rowMeans(cdfs[, -c(1:ncol(grid)), drop=FALSE])
   res <- lapply(seq(npred), function(j){
     temp <- mean_cdfs[(j-1)*nIntegral+1:nIntegral]

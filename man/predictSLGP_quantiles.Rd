@@ -10,7 +10,8 @@ predictSLGP_quantiles(
   probs,
   interpolateBasisFun = "WNN",
   nIntegral = 101,
-  nDiscret = 101
+  nDiscret = 101,
+  discrete = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ predictSLGP_quantiles(
 \item{nIntegral}{Number of integration points for computing the SLGP outputs.}
 
 \item{nDiscret}{Discretization level of the response axis (for CDF inversion).}
+
+\item{discrete}{Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities}
 }
 \value{
 A data frame with columns:

@@ -218,7 +218,7 @@ slgp <- function(formula,
     weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
   }else{
     if(opts$discrete){
-      weightQuadrature <- rep(1/(nIntegral), nIntegral)
+      weightQuadrature <- rep(1, nIntegral)
     }else{
       weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
     }
@@ -252,7 +252,6 @@ slgp <- function(formula,
       trendValues = trendValues
     )
   }else{
-
     if(file.exists("./inst/extdata/simple_model.rds")){
       stan_model <- readRDS(system.file("extdata", "simple_model.rds", package = "SLGP"))
     }else{
@@ -562,7 +561,7 @@ retrainSLGP <- function(SLGPmodel,
     weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
   }else{
     if(opts$discrete){
-      weightQuadrature <- rep(1/(nIntegral), nIntegral)
+      weightQuadrature <- rep(1, nIntegral)
     }else{
       weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
     }

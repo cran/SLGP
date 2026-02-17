@@ -10,7 +10,8 @@ predictSLGP_newNode(
   interpolateBasisFun = "WNN",
   nIntegral = 101,
   nDiscret = 101,
-  normalise = TRUE
+  normalise = TRUE,
+  discrete = TRUE
 )
 }
 \arguments{
@@ -26,6 +27,8 @@ one of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).}
 \item{nDiscret}{Integer specifying the discretization step for interpolation (only used if applicable).}
 
 \item{normalise}{Boolean, indicates if we return normalised or unnormalised pdfs. (defaults to TRUE)}
+
+\item{discrete}{Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities}
 }
 \value{
 A data frame combining \code{newNodes} with columns named \code{pdf_1}, \code{pdf_2}, ...,

@@ -11,7 +11,8 @@ sampleSLGP(
   interpolateBasisFun = "WNN",
   nIntegral = 101,
   nDiscret = 101,
-  seed = NULL
+  seed = NULL,
+  discrete = FALSE
 )
 }
 \arguments{
@@ -29,6 +30,8 @@ One of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).}
 \item{nDiscret}{Integer; discretization step for the response axis.}
 
 \item{seed}{Optional integer to set a random seed for reproducibility.}
+
+\item{discrete}{Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities}
 }
 \value{
 A data frame containing sampled responses from the SLGP model, with covariate columns from \code{newX}
