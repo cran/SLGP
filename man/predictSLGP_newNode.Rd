@@ -10,8 +10,8 @@ predictSLGP_newNode(
   interpolateBasisFun = "WNN",
   nIntegral = 101,
   nDiscret = 101,
-  normalise = TRUE,
-  discrete = TRUE
+  normalize = TRUE,
+  discrete = FALSE
 )
 }
 \arguments{
@@ -24,53 +24,23 @@ one of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).}
 
 \item{nIntegral}{Integer specifying the number of quadrature points over the response space.}
 
-\item{nDiscret}{Integer specifying the discretization step for interpolation (only used if applicable).}
+\item{nDiscret}{Integer specifying the discretisation step for interpolation (only used if applicable).}
 
-\item{normalise}{Boolean, indicates if we return normalised or unnormalised pdfs. (defaults to TRUE)}
+\item{normalize}{Boolean, indicates if we return normalized or unnormalized pdfs. (defaults to TRUE)}
 
 \item{discrete}{Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities}
 }
 \value{
 A data frame combining \code{newNodes} with columns named \code{pdf_1}, \code{pdf_2}, ...,
-representing the posterior predictive density for each sample of the SLGP.
+representing the posterior predictive density for each coefficient draw stored in \code{SLGPmodel}.
 }
 \description{
-Computes the posterior predictive probability densities at new covariate points
-using a fitted Spatial Logistic Gaussian Process (SLGP) model.
+\code{predictSLGP_newNode()} is deprecated; use
+\code{\link[=predict,SLGP-method]{predict}(object, type = "density")} instead.
+
+Computes the posterior predictive probability densities at new covariate
+points using a fitted Spatial Logistic Gaussian Process (SLGP) model.
 }
-\examples{
-\donttest{
-# Load Boston housing dataset
-library(MASS)
-data("Boston")
-# Set input and output ranges manually (you can also use range(Boston$age), etc.)
-range_x <- c(0, 100)
-range_response <- c(0, 50)
-
-#' #Create a SLGP model but don't fit it
-modelPrior <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-                 data = Boston,     # Use the original Boston housing data
-                 method = "none",    # No training
-                 basisFunctionsUsed = "RFF",         # Random Fourier Features
-                 sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-                 predictorsLower = range_x[1],         # Lower bound for 'age'
-                 predictorsUpper = range_x[2],         # Upper bound for 'age'
-                 responseRange = range_response,       # Range for 'medv'
-                 opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-                                      MatParam = 5/2), # Matern 5/2 kernel
-                 seed = 1)                             # Reproducibility
-
-#Let us make 3 draws from the prior
-nrep <- 3
-set.seed(8)
-p <- ncol(modelPrior@coefficients)
-modelPrior@coefficients <- matrix(rnorm(n=nrep*p), nrow=nrep)
-
-# Where to predict the field of pdfs ?
-dfGrid <- data.frame(expand.grid(seq(range_x[1], range_x[2], 5),
-seq(range_response[1], range_response[2],, 101)))
-colnames(dfGrid) <- c("age", "medv")
-predPrior <- predictSLGP_newNode(SLGPmodel=modelPrior,
-                                 newNodes = dfGrid)
-}
+\seealso{
+\code{\link[stats]{predict}} for the recommended user interface.
 }

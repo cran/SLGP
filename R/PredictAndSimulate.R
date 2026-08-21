@@ -1,63 +1,52 @@
 #' Predict densities at new covariate locations using a given SLGP model
 #'
-#' Computes the posterior predictive probability densities at new covariate points
-#' using a fitted Spatial Logistic Gaussian Process (SLGP) model.
+#' @description
+#' `predictSLGP_newNode()` is deprecated; use
+#' \code{\link[=predict,SLGP-method]{predict}(object, type = "density")} instead.
+#'
+#' Computes the posterior predictive probability densities at new covariate
+#' points using a fitted Spatial Logistic Gaussian Process (SLGP) model.
 #'
 #' @param SLGPmodel An object of class \code{\link{SLGP-class}}.
 #' @param newNodes A data frame containing new covariate values at which to evaluate the SLGP.
 #' @param interpolateBasisFun Character string indicating how basis functions are evaluated:
 #'   one of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).
-#' @param nDiscret Integer specifying the discretization step for interpolation (only used if applicable).
+#' @param nDiscret Integer specifying the discretisation step for interpolation (only used if applicable).
 #' @param nIntegral Integer specifying the number of quadrature points over the response space.
-#' @param normalise Boolean, indicates if we return normalised or unnormalised pdfs. (defaults to TRUE)
+#' @param normalize Boolean, indicates if we return normalized or unnormalized pdfs. (defaults to TRUE)
 #' @param discrete Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities
 #'
 #' @return A data frame combining \code{newNodes} with columns named \code{pdf_1}, \code{pdf_2}, ...,
-#' representing the posterior predictive density for each sample of the SLGP.
+#' representing the posterior predictive density for each coefficient draw stored in \code{SLGPmodel}.
 #'
-#' @examples
-#' \donttest{
-#' # Load Boston housing dataset
-#' library(MASS)
-#' data("Boston")
-#' # Set input and output ranges manually (you can also use range(Boston$age), etc.)
-#' range_x <- c(0, 100)
-#' range_response <- c(0, 50)
+#' @seealso \code{\link[stats]{predict}} for the recommended user interface.
 #'
-#'#' #Create a SLGP model but don't fit it
-#' modelPrior <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-#'                  data = Boston,     # Use the original Boston housing data
-#'                  method = "none",    # No training
-#'                  basisFunctionsUsed = "RFF",         # Random Fourier Features
-#'                  sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-#'                  predictorsLower = range_x[1],         # Lower bound for 'age'
-#'                  predictorsUpper = range_x[2],         # Upper bound for 'age'
-#'                  responseRange = range_response,       # Range for 'medv'
-#'                  opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-#'                                       MatParam = 5/2), # Matern 5/2 kernel
-#'                  seed = 1)                             # Reproducibility
-#'
-#' #Let us make 3 draws from the prior
-#' nrep <- 3
-#' set.seed(8)
-#' p <- ncol(modelPrior@coefficients)
-#' modelPrior@coefficients <- matrix(rnorm(n=nrep*p), nrow=nrep)
-#'
-#' # Where to predict the field of pdfs ?
-#' dfGrid <- data.frame(expand.grid(seq(range_x[1], range_x[2], 5),
-#' seq(range_response[1], range_response[2],, 101)))
-#' colnames(dfGrid) <- c("age", "medv")
-#' predPrior <- predictSLGP_newNode(SLGPmodel=modelPrior,
-#'                                  newNodes = dfGrid)
-#' }
 #' @export
 predictSLGP_newNode <- function(SLGPmodel,
                                 newNodes,
                                 interpolateBasisFun = "WNN",
                                 nIntegral=101,
                                 nDiscret=101,
-                                normalise = TRUE,
-                                discrete = TRUE) {
+                                normalize = TRUE,
+                                discrete = FALSE) {
+  .Deprecated(msg = paste('predictSLGP_newNode() is deprecated,',
+                          'use predict(object, type = "density").'))
+  .predict_density(SLGPmodel=SLGPmodel, newNodes=newNodes,
+                   interpolateBasisFun = interpolateBasisFun,
+                   nIntegral = nIntegral, nDiscret = nDiscret,
+                   normalize = normalize, discrete = discrete)
+}
+
+## Internal worker: the real body, NO warning, NOT exported.
+#' @keywords internal
+#' @noRd
+.predict_density <- function(SLGPmodel,
+                             newNodes,
+                             interpolateBasisFun = "WNN",
+                             nIntegral = 101,
+                             nDiscret = 101,
+                             normalize = TRUE,
+                             discrete = FALSE) {
   predictorNames <- SLGPmodel@covariateName
   responseName <-  SLGPmodel@responseName
 
@@ -144,56 +133,32 @@ predictSLGP_newNode <- function(SLGPmodel,
   return(res)
 }
 
+
 #' Predict cumulative distribution values at new locations using a SLGP model
 #'
-#' Computes the posterior cumulative distribution function (CDF) values at specified
-#' covariate values using a fitted SLGP model.
+#' @description
+#' `predictSLGP_cdf()` is deprecated; use
+#' \code{\link[=predict,SLGP-method]{predict}(object, type = "cdf")} instead.
+#'
+#' Computes posterior predictive cumulative distribution function values at
+#' specified response and covariate locations for a fitted Spatial Logistic
+#' Gaussian Process (SLGP) model.
 #'
 #' @param SLGPmodel An object of class \code{\link{SLGP-class}}.
-#' @param newNodes A data frame with covariate values where the SLGP should be evaluated.
+#' @param newNodes A data frame containing both the response column and the
+#'   covariate columns at which the CDF is evaluated.
 #' @param interpolateBasisFun Character string indicating the interpolation scheme for basis functions:
 #'   one of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).
-#' @param nDiscret Discretization resolution for interpolation (optional).
+#' @param nDiscret discretisation resolution for interpolation (optional).
 #' @param nIntegral Number of integration points along the response axis.
 #' @param discrete Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities
 #'
-#' @return A data frame with \code{newNodes} and predicted CDF values, columns named \code{cdf_1}, \code{cdf_2}, ...
+#' @return A data frame combining \code{newNodes} with columns named
+#'   \code{cdf_1}, \code{cdf_2}, ..., containing predictive CDF evaluations
+#'   for each coefficient draw stored in \code{SLGPmodel}.
 #'
-#' @examples
-#' \donttest{
-#' # Load Boston housing dataset
-#' library(MASS)
-#' data("Boston")
-#' # Set input and output ranges manually (you can also use range(Boston$age), etc.)
-#' range_x <- c(0, 100)
-#' range_response <- c(0, 50)
+#' @seealso \code{\link[stats]{predict}} for the recommended user interface.
 #'
-#'#' #Create a SLGP model but don't fit it
-#' modelPrior <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-#'                  data = Boston,     # Use the original Boston housing data
-#'                  method = "none",    # No training
-#'                  basisFunctionsUsed = "RFF",         # Random Fourier Features
-#'                  sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-#'                  predictorsLower = range_x[1],         # Lower bound for 'age'
-#'                  predictorsUpper = range_x[2],         # Upper bound for 'age'
-#'                  responseRange = range_response,       # Range for 'medv'
-#'                  opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-#'                                       MatParam = 5/2), # Matern 5/2 kernel
-#'                  seed = 1)                             # Reproducibility
-#'
-#' #Let us make 3 draws from the prior
-#' nrep <- 3
-#' set.seed(8)
-#' p <- ncol(modelPrior@coefficients)
-#' modelPrior@coefficients <- matrix(rnorm(n=nrep*p), nrow=nrep)
-#'
-#' # Where to predict the field of pdfs ?
-#' dfGrid <- data.frame(expand.grid(seq(range_x[1], range_x[2], 5),
-#' seq(range_response[1], range_response[2],, 101)))
-#' colnames(dfGrid) <- c("age", "medv")
-#' predPriorcdf <- predictSLGP_cdf(SLGPmodel=modelPrior,
-#'                                 newNodes = dfGrid)
-#' }
 #' @export
 #'
 predictSLGP_cdf <- function(SLGPmodel,
@@ -202,6 +167,23 @@ predictSLGP_cdf <- function(SLGPmodel,
                             nIntegral=101,
                             nDiscret=101,
                             discrete=FALSE) {
+  .Deprecated(msg = paste('predictSLGP_cdf() is deprecated,',
+                          'use predict(object, type = "cdf").'))
+  .predict_cdf(SLGPmodel=SLGPmodel, newNodes=newNodes,
+               interpolateBasisFun = interpolateBasisFun,
+               nIntegral = nIntegral, nDiscret = nDiscret,
+               discrete = discrete)
+}
+## Internal worker: the real body, NO warning, NOT exported.
+#' @keywords internal
+#' @noRd
+.predict_cdf <- function(SLGPmodel,
+                                 newNodes,
+                                 interpolateBasisFun = "WNN",
+                                 nIntegral=101,
+                                 nDiscret=101,
+                                 discrete=FALSE) {
+
   predictorNames <- SLGPmodel@covariateName
   responseName <-  SLGPmodel@responseName
 
@@ -282,7 +264,7 @@ predictSLGP_cdf <- function(SLGPmodel,
     res<- sapply(seq(ncol(SLGPvalues)), function(i){
       unname(rowSums(sapply(seq(ncol(intermediateQuantities$indSamplesToNodesCDF)), function(j){
         return(SLGPvalues[intermediateQuantities$indSamplesToNodesCDF[, j], i]*
-                 intermediateQuantities$weightSamplesToNodesCDF[, j]*domain_size)
+                 intermediateQuantities$weightSamplesToNodesCDF[, j])
       }), na.rm = TRUE))
     })
 
@@ -311,57 +293,36 @@ predictSLGP_cdf <- function(SLGPmodel,
   return(res)
 }
 
-#' Predict quantiles from a SLGP model at new locations
+#' Predict conditional quantiles
 #'
-#' Computes quantile values at specified levels (\code{probs}) for new covariate points,
-#' based on the posterior CDFs from a trained SLGP model.
+#' @description
+#' `predictSLGP_quantiles()` is deprecated; use
+#' \code{\link[=predict,SLGP-method]{predict}(object, type = "quantiles")} instead.
+#'
+#' Computes predictive quantiles at specified covariate locations by numerical
+#' inversion of the posterior predictive CDF.
 #'
 #' @param SLGPmodel An object of class \code{\link{SLGP-class}}.
-#' @param newNodes A data frame of covariate values.
-#' @param probs Numeric vector of quantile levels to compute (e.g., 0.1, 0.5, 0.9).
-#' @param interpolateBasisFun Character string specifying interpolation scheme: \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).
-#' @param nDiscret Discretization level of the response axis (for CDF inversion).
+#' @param newNodes A data frame containing the covariate columns at which
+#'   quantiles are evaluated.
+#' @param probs Numeric vector of probabilities in \eqn{(0, 1)}.
+#' @param interpolateBasisFun Character string specifying interpolation scheme:
+#'    one of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).
+#' @param nDiscret discretisation resolution used for CDF inversion.
 #' @param nIntegral Number of integration points for computing the SLGP outputs.
 #' @param discrete Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities
 #'
-#' @return A data frame with columns:
-#'   \itemize{
-#'     \item The covariates in \code{newNodes} (repeated per quantile level),
-#'     \item A column \code{probs} indicating the quantile level,
-#'     \item Columns \code{qSLGP_1}, \code{qSLGP_2}, ... for each posterior sample's quantile estimate.
-#'   }
+#' @return A data frame containing the covariates in \code{newNodes}, a column
+#'   \code{probs}, and columns named \code{qSLGP_1}, \code{qSLGP_2}, ...,
+#'   containing predictive quantiles for each coefficient draw stored in
+#'   \code{SLGPmodel}.
 #'
-#' @examples
-#' \donttest{
-#' # Load Boston housing dataset
-#' library(MASS)
-#' data("Boston")
-#' # Set input and output ranges manually (you can also use range(Boston$age), etc.)
-#' range_x <- c(0, 100)
-#' range_response <- c(0, 50)
-#'
-#' # Train an SLGP model using Laplace estimation and RFF basis
-#' modelLaplace <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-#'                  data = Boston,     # Use the original Boston housing data
-#'                  method = "Laplace",    # Train using Maximum A Posteriori estimation
-#'                  basisFunctionsUsed = "RFF",         # Random Fourier Features
-#'                  sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-#'                  predictorsLower = range_x[1],         # Lower bound for 'age'
-#'                  predictorsUpper = range_x[2],         # Upper bound for 'age'
-#'                  responseRange = range_response,       # Range for 'medv'
-#'                  opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-#'                                       MatParam = 5/2), # Matern 5/2 kernel
-#'                  seed = 1)                             # Reproducibility
-#' dfX <- data.frame(age=seq(range_x[1], range_x[2], 1))
-#' # Predict some quantiles, for instance here the first quartile, median, third quartile
-#' predQuartiles <- predictSLGP_quantiles(SLGPmodel= modelLaplace,
-#'                                        newNodes = dfX,
-#'                                        probs=c(0.25, 0.50, 0.75))
-#'
-#' }
+#' @seealso \code{\link[stats]{predict}} for the recommended user interface.
 #'
 #' @importFrom stats approx
+#'
 #' @export
+#'
 predictSLGP_quantiles <- function(SLGPmodel,
                                   newNodes,
                                   probs,
@@ -369,6 +330,25 @@ predictSLGP_quantiles <- function(SLGPmodel,
                                   nIntegral=101,
                                   nDiscret=101,
                                   discrete=FALSE) {
+  .Deprecated(msg = paste('predictSLGP_quantiles() is deprecated',
+                          'use predict(object, type = "quantiles").'))
+  .predict_quantiles(SLGPmodel=SLGPmodel, newNodes=newNodes,
+                     probs=probs, interpolateBasisFun = interpolateBasisFun,
+                     nIntegral = nIntegral, nDiscret = nDiscret,
+                     discrete = discrete)
+}
+
+
+## Internal worker: the real body, NO warning, NOT exported.
+#' @keywords internal
+#' @noRd
+.predict_quantiles <- function(SLGPmodel,
+                               newNodes,
+                               probs,
+                               interpolateBasisFun = "WNN",
+                               nIntegral=101,
+                               nDiscret=101,
+                               discrete=FALSE) {
   predictorNames <- SLGPmodel@covariateName
   responseName <-  SLGPmodel@responseName
 
@@ -471,59 +451,35 @@ predictSLGP_quantiles <- function(SLGPmodel,
   return(res)
 }
 
-#' Predict centered or uncentered moments at new locations from a SLGP model
+
+#' Predict conditional moments
 #'
-#' Computes statistical moments (e.g., mean, variance, ...) of the posterior predictive
-#' distributions at new covariate locations, using a given SLGP model.
+#' @description
+#' `predictSLGP_moments()` is deprecated; use
+#' \code{\link[=predict,SLGP-method]{predict}(object, type = "moments")} instead.
+#'
+#'
+#' Computes raw or centered moments of the posterior predictive distributions
+#' at specified covariate locations.
 #'
 #' @param SLGPmodel An object of class \code{\link{SLGP-class}}.
 #' @param newNodes A data frame of new covariate values.
 #' @param power Scalar or vector of positive integers indicating the moment orders to compute.
 #' @param centered Logical; if \code{TRUE}, computes centered moments. If \code{FALSE}, computes raw moments.
 #' @param interpolateBasisFun Interpolation mode for basis functions: \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).
-#' @param nDiscret Discretization resolution of the response space.
+#' @param nDiscret discretisation resolution of the response space.
 #' @param nIntegral Number of integration points for computing densities.
 #' @param discrete Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities
 #'
-#' @return A data frame with:
-#'   \itemize{
-#'     \item Repeated rows of the input covariates,
-#'     \item A column \code{power} indicating the moment order,
-#'     \item One or more columns \code{mSLGP_1}, \code{mSLGP_2}, ... for the estimated moments across posterior samples.
-#'   }
+#' @return A data frame containing the covariates in \code{newNodes}, a column
+#'   \code{power}, and columns named \code{mSLGP_1}, \code{mSLGP_2}, ...,
+#'   containing predictive moments for each coefficient draw stored in
+#'   \code{SLGPmodel}.
 #'
-#' @examples
-#' \donttest{
-#' # Load Boston housing dataset
-#' library(MASS)
-#' data("Boston")
-#' # Set input and output ranges manually (you can also use range(Boston$age), etc.)
-#' range_x <- c(0, 100)
-#' range_response <- c(0, 50)
+#' @seealso \code{\link[stats]{predict}} for the recommended user interface.
 #'
-#' # Train an SLGP model using Laplace estimation and RFF basis
-#' modelLaplace <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-#'                  data = Boston,     # Use the original Boston housing data
-#'                  method = "Laplace",    # Train using Maximum A Posteriori estimation
-#'                  basisFunctionsUsed = "RFF",         # Random Fourier Features
-#'                  sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-#'                  predictorsLower = range_x[1],         # Lower bound for 'age'
-#'                  predictorsUpper = range_x[2],         # Upper bound for 'age'
-#'                  responseRange = range_response,       # Range for 'medv'
-#'                  opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-#'                                       MatParam = 5/2), # Matern 5/2 kernel
-#'                  seed = 1)                             # Reproducibility
-#' dfX <- data.frame(age=seq(range_x[1], range_x[2], 1))
-#' predMean <- predictSLGP_moments(SLGPmodel=modelLaplace,
-#'                                 newNodes = dfX,
-#'                                 power=c(1, 2),
-#'                                 centered=FALSE) # Uncentered moments of order 1 and 2
-#' predVar <- predictSLGP_moments(SLGPmodel=modelLaplace,
-#'                                newNodes = dfX,
-#'                                power=c(2),
-#'                                centered=TRUE) # Centered moments of order 2 (Variance)
-#' }
 #' @export
+#'
 predictSLGP_moments <- function(SLGPmodel,
                                 newNodes,
                                 power,
@@ -532,6 +488,27 @@ predictSLGP_moments <- function(SLGPmodel,
                                 nIntegral=101,
                                 nDiscret=101,
                                 discrete=FALSE) {
+  .Deprecated(msg = paste('predictSLGP_moments() is deprecated,',
+                          'use predict(object, type = "moments").'))
+  .predict_moments(SLGPmodel=SLGPmodel, newNodes=newNodes,
+                   power=power, centered=centered,
+                   interpolateBasisFun = interpolateBasisFun,
+                   nIntegral = nIntegral, nDiscret = nDiscret,
+                   discrete = discrete)
+}
+
+## Internal worker: the real body, NO warning, NOT exported.
+#' @keywords internal
+#' @noRd
+.predict_moments <- function(SLGPmodel,
+                             newNodes,
+                             power,
+                             centered=FALSE,
+                             interpolateBasisFun = "WNN",
+                             nIntegral=101,
+                             nDiscret=101,
+                             discrete=FALSE) {
+
   predictorNames <- SLGPmodel@covariateName
   responseName <-  SLGPmodel@responseName
 
@@ -643,55 +620,36 @@ predictSLGP_moments <- function(SLGPmodel,
   return(res)
 }
 
-#' Draw posterior predictive samples from a SLGP model
+#' Draw conditional samples
 #'
-#' Samples from the predictive distributions modeled by a SLGP at new covariate inputs.
-#' This method uses inverse transform sampling on the estimated posterior CDFs.
+#' @description
+#' `sampleSLGP()` is deprecated; use
+#' \code{\link[=simulate,SLGP-method]{simulate}(object)} instead.
+#'
+#' Draws samples from the posterior predictive distributions at specified
+#' covariate locations using inverse transform sampling based on the estimated
+#' predictive CDF.
 #'
 #' @param SLGPmodel A trained SLGP model object (\code{\link{SLGP-class}}).
 #' @param newX A data frame of new covariate values at which to draw samples.
 #' @param n Integer or integer vector specifying how many samples to draw at each input point.
 #' @param interpolateBasisFun Character string specifying interpolation scheme for basis evaluation.
 #'   One of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).
-#' @param nDiscret Integer; discretization step for the response axis.
+#' @param nDiscret Integer; discretisation step for the response axis.
 #' @param nIntegral Integer; number of quadrature points for density approximation.
 #' @param seed Optional integer to set a random seed for reproducibility.
 #' @param discrete Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities
 #'
-#' @return A data frame containing sampled responses from the SLGP model, with covariate columns from \code{newX}
-#' and one response column named after \code{SLGPmodel@responseName}.
+#' @return A data frame containing simulated responses, with the covariate
+#'   columns from \code{newX} and one response column named after the response
+#'   variable of \code{SLGPmodel}.
 #'
-#' @examples
-#' \donttest{
-#' # Load Boston housing dataset
-#' library(MASS)
-#' data("Boston")
-#' # Set input and output ranges manually (you can also use range(Boston$age), etc.)
-#' range_x <- c(0, 100)
-#' range_response <- c(0, 50)
+#' @seealso \code{\link[stats]{simulate}} for the recommended user interface.
 #'
-#' # Train an SLGP model using Laplace estimation and RFF basis
-#' modelMAP <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-#'                  data = Boston,     # Use the original Boston housing data
-#'                  method = "MAP",    # Train using Maximum A Posteriori estimation
-#'                  basisFunctionsUsed = "RFF",         # Random Fourier Features
-#'                  sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-#'                  predictorsLower = range_x[1],         # Lower bound for 'age'
-#'                  predictorsUpper = range_x[2],         # Upper bound for 'age'
-#'                  responseRange = range_response,       # Range for 'medv'
-#'                  opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-#'                                       MatParam = 5/2), # Matern 5/2 kernel
-#'                  seed = 1)                             # Reproducibility
-#'
-#' # Let's draw new sample points from the SLGP
-#'
-#' newDataPoints <- sampleSLGP(modelMAP,
-#'                             newX = data.frame(age=c(0, 25, 95)),
-#'                             n = c(10, 1000, 1), # how many samples to draw at each new x
-#'                             interpolateBasisFun = "WNN")
-#' }
 #' @importFrom stats runif approxfun
+#'
 #' @export
+#'
 sampleSLGP <- function(SLGPmodel,
                        newX,
                        n,
@@ -700,6 +658,25 @@ sampleSLGP <- function(SLGPmodel,
                        nDiscret=101,
                        seed=NULL,
                        discrete=FALSE) {
+  .Deprecated(msg = paste('sampleSLGP() is deprecated, use simulate(object).'))
+  .simulate_SLGP(SLGPmodel=SLGPmodel, newX=newX, n=n,
+                 interpolateBasisFun = interpolateBasisFun,
+                 nIntegral=nIntegral, nDiscret=nDiscret, seed=seed,
+                 discrete=discrete)
+}
+
+
+## Internal worker: the real body, NO warning, NOT exported.
+#' @keywords internal
+#' @noRd
+.simulate_SLGP <- function(SLGPmodel,
+                           newX,
+                           n,
+                           interpolateBasisFun = "WNN",
+                           nIntegral=101,
+                           nDiscret=101,
+                           seed=NULL,
+                           discrete=FALSE) {
   if (!requireNamespace("GoFKernel", quietly = TRUE)) {
     stop("Package 'GoFKernel' could not be used")
   }
@@ -724,7 +701,7 @@ sampleSLGP <- function(SLGPmodel,
   colnames(grid)<- c(SLGPmodel@responseName, colnames(newX))
 
 
-  cdfs <- predictSLGP_cdf(SLGPmodel=SLGPmodel,
+  cdfs <- .predict_cdf(SLGPmodel=SLGPmodel,
                           newNodes=grid,
                           interpolateBasisFun = interpolateBasisFun,
                           nIntegral=nIntegral,

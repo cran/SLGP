@@ -2,7 +2,7 @@
 % Please edit documentation in R/PredictAndSimulate.R
 \name{predictSLGP_moments}
 \alias{predictSLGP_moments}
-\title{Predict centered or uncentered moments at new locations from a SLGP model}
+\title{Predict conditional moments}
 \usage{
 predictSLGP_moments(
   SLGPmodel,
@@ -28,51 +28,23 @@ predictSLGP_moments(
 
 \item{nIntegral}{Number of integration points for computing densities.}
 
-\item{nDiscret}{Discretization resolution of the response space.}
+\item{nDiscret}{discretisation resolution of the response space.}
 
 \item{discrete}{Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities}
 }
 \value{
-A data frame with:
-\itemize{
-\item Repeated rows of the input covariates,
-\item A column \code{power} indicating the moment order,
-\item One or more columns \code{mSLGP_1}, \code{mSLGP_2}, ... for the estimated moments across posterior samples.
-}
+A data frame containing the covariates in \code{newNodes}, a column
+\code{power}, and columns named \code{mSLGP_1}, \code{mSLGP_2}, ...,
+containing predictive moments for each coefficient draw stored in
+\code{SLGPmodel}.
 }
 \description{
-Computes statistical moments (e.g., mean, variance, ...) of the posterior predictive
-distributions at new covariate locations, using a given SLGP model.
-}
-\examples{
-\donttest{
-# Load Boston housing dataset
-library(MASS)
-data("Boston")
-# Set input and output ranges manually (you can also use range(Boston$age), etc.)
-range_x <- c(0, 100)
-range_response <- c(0, 50)
+\code{predictSLGP_moments()} is deprecated; use
+\code{\link[=predict,SLGP-method]{predict}(object, type = "moments")} instead.
 
-# Train an SLGP model using Laplace estimation and RFF basis
-modelLaplace <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-                 data = Boston,     # Use the original Boston housing data
-                 method = "Laplace",    # Train using Maximum A Posteriori estimation
-                 basisFunctionsUsed = "RFF",         # Random Fourier Features
-                 sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-                 predictorsLower = range_x[1],         # Lower bound for 'age'
-                 predictorsUpper = range_x[2],         # Upper bound for 'age'
-                 responseRange = range_response,       # Range for 'medv'
-                 opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-                                      MatParam = 5/2), # Matern 5/2 kernel
-                 seed = 1)                             # Reproducibility
-dfX <- data.frame(age=seq(range_x[1], range_x[2], 1))
-predMean <- predictSLGP_moments(SLGPmodel=modelLaplace,
-                                newNodes = dfX,
-                                power=c(1, 2),
-                                centered=FALSE) # Uncentered moments of order 1 and 2
-predVar <- predictSLGP_moments(SLGPmodel=modelLaplace,
-                               newNodes = dfX,
-                               power=c(2),
-                               centered=TRUE) # Centered moments of order 2 (Variance)
+Computes raw or centered moments of the posterior predictive distributions
+at specified covariate locations.
 }
+\seealso{
+\code{\link[stats]{predict}} for the recommended user interface.
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/PredictAndSimulate.R
 \name{sampleSLGP}
 \alias{sampleSLGP}
-\title{Draw posterior predictive samples from a SLGP model}
+\title{Draw conditional samples}
 \usage{
 sampleSLGP(
   SLGPmodel,
@@ -27,47 +27,25 @@ One of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).}
 
 \item{nIntegral}{Integer; number of quadrature points for density approximation.}
 
-\item{nDiscret}{Integer; discretization step for the response axis.}
+\item{nDiscret}{Integer; discretisation step for the response axis.}
 
 \item{seed}{Optional integer to set a random seed for reproducibility.}
 
 \item{discrete}{Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities}
 }
 \value{
-A data frame containing sampled responses from the SLGP model, with covariate columns from \code{newX}
-and one response column named after \code{SLGPmodel@responseName}.
+A data frame containing simulated responses, with the covariate
+columns from \code{newX} and one response column named after the response
+variable of \code{SLGPmodel}.
 }
 \description{
-Samples from the predictive distributions modeled by a SLGP at new covariate inputs.
-This method uses inverse transform sampling on the estimated posterior CDFs.
+\code{sampleSLGP()} is deprecated; use
+\code{\link[=simulate,SLGP-method]{simulate}(object)} instead.
+
+Draws samples from the posterior predictive distributions at specified
+covariate locations using inverse transform sampling based on the estimated
+predictive CDF.
 }
-\examples{
-\donttest{
-# Load Boston housing dataset
-library(MASS)
-data("Boston")
-# Set input and output ranges manually (you can also use range(Boston$age), etc.)
-range_x <- c(0, 100)
-range_response <- c(0, 50)
-
-# Train an SLGP model using Laplace estimation and RFF basis
-modelMAP <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-                 data = Boston,     # Use the original Boston housing data
-                 method = "MAP",    # Train using Maximum A Posteriori estimation
-                 basisFunctionsUsed = "RFF",         # Random Fourier Features
-                 sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-                 predictorsLower = range_x[1],         # Lower bound for 'age'
-                 predictorsUpper = range_x[2],         # Upper bound for 'age'
-                 responseRange = range_response,       # Range for 'medv'
-                 opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-                                      MatParam = 5/2), # Matern 5/2 kernel
-                 seed = 1)                             # Reproducibility
-
-# Let's draw new sample points from the SLGP
-
-newDataPoints <- sampleSLGP(modelMAP,
-                            newX = data.frame(age=c(0, 25, 95)),
-                            n = c(10, 1000, 1), # how many samples to draw at each new x
-                            interpolateBasisFun = "WNN")
-}
+\seealso{
+\code{\link[stats]{simulate}} for the recommended user interface.
 }

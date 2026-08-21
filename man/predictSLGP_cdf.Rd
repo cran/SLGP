@@ -16,57 +16,31 @@ predictSLGP_cdf(
 \arguments{
 \item{SLGPmodel}{An object of class \code{\link{SLGP-class}}.}
 
-\item{newNodes}{A data frame with covariate values where the SLGP should be evaluated.}
+\item{newNodes}{A data frame containing both the response column and the
+covariate columns at which the CDF is evaluated.}
 
 \item{interpolateBasisFun}{Character string indicating the interpolation scheme for basis functions:
 one of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).}
 
 \item{nIntegral}{Number of integration points along the response axis.}
 
-\item{nDiscret}{Discretization resolution for interpolation (optional).}
+\item{nDiscret}{discretisation resolution for interpolation (optional).}
 
 \item{discrete}{Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities}
 }
 \value{
-A data frame with \code{newNodes} and predicted CDF values, columns named \code{cdf_1}, \code{cdf_2}, ...
+A data frame combining \code{newNodes} with columns named
+\code{cdf_1}, \code{cdf_2}, ..., containing predictive CDF evaluations
+for each coefficient draw stored in \code{SLGPmodel}.
 }
 \description{
-Computes the posterior cumulative distribution function (CDF) values at specified
-covariate values using a fitted SLGP model.
+\code{predictSLGP_cdf()} is deprecated; use
+\code{\link[=predict,SLGP-method]{predict}(object, type = "cdf")} instead.
+
+Computes posterior predictive cumulative distribution function values at
+specified response and covariate locations for a fitted Spatial Logistic
+Gaussian Process (SLGP) model.
 }
-\examples{
-\donttest{
-# Load Boston housing dataset
-library(MASS)
-data("Boston")
-# Set input and output ranges manually (you can also use range(Boston$age), etc.)
-range_x <- c(0, 100)
-range_response <- c(0, 50)
-
-#' #Create a SLGP model but don't fit it
-modelPrior <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-                 data = Boston,     # Use the original Boston housing data
-                 method = "none",    # No training
-                 basisFunctionsUsed = "RFF",         # Random Fourier Features
-                 sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-                 predictorsLower = range_x[1],         # Lower bound for 'age'
-                 predictorsUpper = range_x[2],         # Upper bound for 'age'
-                 responseRange = range_response,       # Range for 'medv'
-                 opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-                                      MatParam = 5/2), # Matern 5/2 kernel
-                 seed = 1)                             # Reproducibility
-
-#Let us make 3 draws from the prior
-nrep <- 3
-set.seed(8)
-p <- ncol(modelPrior@coefficients)
-modelPrior@coefficients <- matrix(rnorm(n=nrep*p), nrow=nrep)
-
-# Where to predict the field of pdfs ?
-dfGrid <- data.frame(expand.grid(seq(range_x[1], range_x[2], 5),
-seq(range_response[1], range_response[2],, 101)))
-colnames(dfGrid) <- c("age", "medv")
-predPriorcdf <- predictSLGP_cdf(SLGPmodel=modelPrior,
-                                newNodes = dfGrid)
-}
+\seealso{
+\code{\link[stats]{predict}} for the recommended user interface.
 }

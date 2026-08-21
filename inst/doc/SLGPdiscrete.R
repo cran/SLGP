@@ -4,146 +4,141 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-## ----loadHousing--------------------------------------------------------------
+## ----loadQuakes, warning=FALSE, message=FALSE---------------------------------
+data("quakes")
+library(tidyr)
 library(dplyr)
-# Load the dataset (available in MASS package)
-require(MASS)
-data("Boston", package = "MASS")
-df <- Boston 
-range_response <- range(df$rad)
-range_x <- matrix(c(c(1, 13),
-                    range(df$medv)), # Use c(1, 13) instead of range = c(1.1296 12.1265)
-                  # For easier chunks
-                  ncol=2, byrow=TRUE)
 
-## ----figureHousing, fig.cap = "Figure 1: Index of Accessibility to Radial Highways as a Function of Home Value and Distance to Employment Centers", fig.fullwidth=TRUE, fig.height=6, fig.width=6, fig.align='center',fig.pos="H"----
+# Bin data together for visualisation purpose
+df <- quakes %>%
+  mutate(long_bin = cut(long, breaks = seq(165, 190, by = 2.5), include.lowest = FALSE)) %>%
+  group_by(long_bin) %>%
+  mutate(long_bin = paste0(long_bin, "\nn=", n()))%>%
+  ungroup()%>%
+  mutate(long_bin = factor(long_bin, 
+                           levels = sort(unique(long_bin), decreasing = FALSE))) %>%
+  data.frame()
+
+range_response <- c(4, 7) 
+range_x <- c(165, 190)
+
+## ----figureQuakesDiscrete, fig.cap = "A visual representation of the event magnitudes depending on the longitude in the `quakes` catalogue.", out.width = "0.99\\textwidth", fig.height=3.5, fig.width=10, fig.align='center',fig.pos="H"----
 library(ggplot2)
 library(ggpubr)
-
-# Histogram: Distribution of med by age bin
-ggplot(df, aes(x = dis, y=medv, fill=as.factor(rad))) +
-  geom_point(pch=21)+
-  labs(x = "Median value of owner-occupied homes [k$]", 
-       y = "weighted distance to employment centers", 
-       title = "Scatter-plot of accessibility to radial highways") +
-  theme_minimal()+
-  scale_fill_viridis_d(option = "viridis",
-                       guide = guide_legend(nrow = 3,
-                                            title = "Index of accessibility",
-                                            barheight = unit(2, units = "mm"),
-                                            barwidth = unit(55, units = "mm"),
-                                            title.position = 'top',
-                                            label.position = "bottom",
-                                            title.hjust = 0.5))+
-  theme(legend.position = "bottom")
+library(viridis)
 
 
-## ----figureHousing2, fig.cap ="Figure 2: Index of Accessibility to Radial Highways as a Function of Home Value and Distance to Employment Centers, with rescaled indices", fig.fullwidth=TRUE, fig.height=6, fig.width=6, fig.align='center',fig.pos="H"----
-df$rad <- ifelse(df$rad==24, 9, df$rad) 
-range_response <- range(df$rad)
+scatter_plot <- ggplot(df, aes(x = long, y = mag)) +
+  geom_point(alpha = 0.5, color = "navy") +
+  labs(x = "Longitude (°)",
+       y = "Magnitude",
+       title = "Observed earthquake magnitudes")  +
+  theme_bw()+
+  coord_cartesian(xlim=range_x,
+                  ylim=range_response)
 
-# Histogram: Distribution of med by age bin
-ggplot(df, aes(x = dis, y=medv, fill=factor(rad, levels=seq(9)))) +
-  geom_point(pch=21)+
-  labs(x = "Median value of owner-occupied homes [k$]", 
-       y = "weighted distance to employment centers", 
-       title = "Scatter-plot of accessibility to radial highways") +
-  theme_minimal()+
-  scale_fill_viridis_d(option = "viridis",
-                       guide = guide_legend(nrow = 3,
-                                            title = "Index of accessibility",
-                                            barheight = unit(2, units = "mm"),
-                                            barwidth = unit(55, units = "mm"),
-                                            title.position = 'top',
-                                            label.position = "bottom",
-                                            title.hjust = 0.5))+
-  theme(legend.position = "bottom")
+# Compute normalized frequencies per long_bin
+df_bar <- df %>%
+  count(long_bin, mag) %>%
+  group_by(long_bin) %>%
+  mutate(prop = n / sum(n))
 
-## ----figureHousing3, fig.cap ="Figure 3: Distribution of RAD across bins of various home value and distance to employment centers", fig.fullwidth=TRUE, fig.height=6, fig.width=8, fig.align='center',fig.pos="H"----
-
-# Create interval variables for medv and dis
-df <- df %>%
-  mutate(medv_bin = factor(paste0("medv in ",
-                                  cut(medv, breaks = seq(0, 50, by = 10), 
-                                      include.lowest = FALSE, right = TRUE)),
-                           levels = paste0("medv in ", 
-                                           cut(seq(50, 1, -10), 
-                                               breaks = seq(0, 50, by = 10),
-                                               include.lowest = FALSE, right = TRUE))),
-         dis_bin = factor(paste0("dis in ",
-                                 cut(dis, breaks = seq(1, 13, by = 2), 
-                                     include.lowest = FALSE, right = TRUE)),
-                          levels = paste0("dis in ", 
-                                          cut(seq(2, 13, 2), 
-                                              breaks = seq(1, 13, by = 2),
-                                              include.lowest = FALSE, right = TRUE))))
-
-ggplot(df, aes(x = rad, y = after_stat(prop))) +
-  geom_bar(fill="cornflowerblue", col="navy", lwd=0.2, alpha=0.7, 
-           width=0.4)+
-  facet_grid(medv_bin ~ dis_bin) +
-  labs(x = "Index of accessibility to radial highways (RAD)", 
-       y = "Proportion", 
-       title = "Distribution of RAD across bins of various home value and distance to employment centers") +
-  theme_minimal() +
-  theme(legend.position = "bottom")+
-  scale_x_continuous(breaks = c(1:9)) 
-
+# Histogram: Distribution of mag by 'long' bin
+hist_plot <- ggplot(df_bar, aes(x = mag)) +
+  geom_bar(mapping=aes(y = prop), stat = "identity",
+           fill = "darkgrey", color = "grey50", lwd = 0.18, alpha = 0.7)  +
+  geom_rug(data = df, aes(x = mag), 
+           sides = "b", color = "navy", alpha = 0.5) +
+  facet_wrap(~ long_bin, scales = "free_y", nrow=2) +
+  labs(x = "Magnitude", 
+       y = "Probability density", 
+       title = "Histogram of 'magnitude' by 'long' group") +
+  theme_bw()+
+  coord_cartesian(xlim=range_response,
+                  ylim=c(0, 0.5)) 
+ggarrange(scatter_plot, hist_plot, ncol = 2, nrow = 1,
+          widths = c(0.3, 0.7))
 
 ## ----SLGPfitting--------------------------------------------------------------
 library(SLGP)
 
-modelMAP <- slgp(rad~dis+medv, # Use a formula with two indexing variables
+modelMAP <- slgp(mag~long, # Use a formula with two indexing variables
                  data=df,
                  method="MAP", #Maximum a posteriori estimation scheme
                  basisFunctionsUsed = "RFF",
                  interpolateBasisFun="WNN", # Accelerate inference
-                 hyperparams = list(lengthscale=c(0.1, 0.15, 0.15), 
-                                    # Applied to normalised data
-                                    # So 0.15 is 15% of the range of values
+                 hyperparams = list(lengthscale=c(0.1, 0.1), 
                                     sigma2=1), 
-                 nIntegral = 9, #or length(seq(seq(range_response[1], range_response[2])))
-                 sigmaEstimationMethod = "heuristic", # Set to heuristic for numerical stability                 
-                 predictorsLower= c(range_x[,1]),
-                 predictorsUpper= c(range_x[,2]),
+                 nIntegral = 31, 
+                 sigmaEstimationMethod = "heuristic", 
+                 # Set to heuristic for numerical stability                 
+                 predictorsLower= c(range_x[1]),
+                 predictorsUpper= c(range_x[2]),
                  responseRange= range_response,
                  opts_BasisFun = list(nFreq=150,
-                                      MatParam=5/2))
+                                      MatParam=5/2),
+                 discrete=TRUE)
 
-## ----SLGPplotting1, fig.cap = "Figure 2: Predictive probabilities of rad at medv and dis, as predicted by a SLGP.", fig.fullwidth=TRUE, fig.height=6, fig.width=8, fig.align='center',fig.pos="H"----
-library(viridis)
-dfGrid <- data.frame(expand.grid(seq(range_x[1, 1], range_x[1, 2], 0.5), 
-                                 seq(range_x[2, 1], range_x[2, 2], 1), 
-                                 seq(range_response[1], range_response[2])))
-colnames(dfGrid) <- c("dis", "medv", "rad")
-pred <- predictSLGP_newNode(SLGPmodel=modelMAP,
-                            newNodes = dfGrid,
-                            nIntegral = 9)
-pred[, -c(1:3)] <- pred[, -c(1:3)] * diff(range_response) /(diff(range_response) +1) 
-# Goes from values to integrate over a domain to discrete probabilities
-df_plot <- pred %>%
-  filter(dis %in% seq(2, 12, 2))%>%
-  filter(medv %in% seq(5, 45, 10)) %>%
-  mutate(medv_bin=paste0("medv in (", medv-5,",", medv+5,"]"))%>%
-  mutate(dis_bin=paste0("dis in (", dis-1,",", dis+1,"]"))
-df_counts <- df %>%
-  group_by(medv_bin, dis_bin) %>%
-  summarise(count = paste0("n=", n()), .groups = "keep")
+## ----SLGPplottingPrior1, fig.cap = "Conditional magnitude probabilities across longitude under the MAP estimate of the SLGP.", fig.fullwidth=TRUE, fig.height=5, fig.width=10, fig.align='center', fig.pos="H"----
+plot( modelMAP,
+      newdata = data.frame(long = seq(range_x[1], range_x[2], length.out = 6)),
+      draw = "mean",
+      panels = TRUE,
+      n_response = 31,
+      discrete = TRUE)
 
-ggplot() +
-  geom_bar(data=df, mapping=aes(x = rad-0.1, y = after_stat(prop)),
-           fill="cornflowerblue", col="navy", lwd=0.2, alpha=0.7, 
-           width=0.4) +
-  geom_col(data=df_plot, mapping=aes(x = rad+0.1, y = pdf_1),
-           col="red", fill="grey", lwd=0.2, alpha=0.7, lty=2, 
-           width=0.4) +
-  geom_text(data=df_counts, mapping=aes(x = 1.5, y = 1, label=count), 
-            col="grey10", size = 3, vjust = 1)+ 
-  facet_grid(medv_bin ~ dis_bin) +
-  labs(x = "Index of accessibility to radial highways (RAD)", 
-       y = "Proportion", 
-       title = "Distribution of RAD across bins of various medv and dis values (blue histogram)\nVS SLGP at the center of these bins") +
-  theme_minimal() +
-  theme(legend.position = "bottom")+
-  scale_x_continuous(breaks = c(1:9)) 
+## ----SLGPplottingMAPDiscrete, fig.cap = "Empirical magnitude distributions within longitude bins and SLGP MAP estimates at the corresponding bin centers.", fig.fullwidth = TRUE, fig.height = 4, fig.width = 10, fig.align = "center", fig.pos = "H"----
+
+selected_values <- c(167, 180, 185)
+gap <- 0.5
+
+df_filtered <- df %>%
+  mutate(interval=findInterval(long, c(0, 
+                                       selected_values[1]-gap, 
+                                       selected_values[1]+gap, 
+                                       selected_values[2]-gap, 
+                                       selected_values[2]+gap, 
+                                       selected_values[3]-gap, 
+                                       selected_values[3]+gap)))%>%
+  filter(interval %in% c(2, 4, 6))%>%
+  group_by(interval)%>%
+  mutate(category = paste0("long close to ", c("", selected_values[1],
+                                               "", selected_values[2],
+                                               "", selected_values[3])[interval], 
+                           "\nn=", n()))
+
+names <- sort(unique(df_filtered$category))
+dfGrid <- data.frame(expand.grid(selected_values, 
+                                 seq(range_response[1], range_response[2],, 31)))
+colnames(dfGrid) <- c("long", "mag")
+predMAP <- predict(modelMAP, newdata = dfGrid, discrete=TRUE, nIntegral=31)
+
+colnames(predMAP) <- c("long", "mag", "MAP estimator")
+predMAP <- predMAP%>%
+  pivot_longer(-c("long", "mag"))
+predMAP$category <-ifelse(predMAP$long==selected_values[1], names[1],
+                          ifelse(predMAP$long==selected_values[2], names[2], names[3]))
+
+
+df_emp <- df_filtered %>%
+  count(category, mag) %>%
+  group_by(category) %>%
+  mutate(prob = n / sum(n)) %>%
+  ungroup()
+
+ggplot(mapping=aes(x = mag)) +
+  geom_col(data = df_emp, aes(y = prob), width = 0.09, fill = "darkgrey",
+    color = "grey50", linewidth = 0.2, alpha = 0.7)+
+  geom_step(data=predMAP, mapping=aes(y=value, group=name, col=name), 
+            lwd=1.1, direction = "mid")+
+  facet_wrap(~ category, scales = "free_y", nrow=1) +
+  labs(x = "Magnitude",
+       y = "Probability",    
+       title = "Binned 'magnitude' histograms vs SLGP MAP estimates at bins centers") +
+  theme_bw()+
+  theme(legend.position="bottom",
+        legend.direction = "horizontal",
+        legend.title = element_blank())+
+  coord_cartesian(xlim=range_response,
+                  ylim=c(0, 0.2)) 
 

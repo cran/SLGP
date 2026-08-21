@@ -2,7 +2,7 @@
 % Please edit documentation in R/datamanagement.R
 \name{pre_comput_WNN}
 \alias{pre_comput_WNN}
-\title{pre_comput_WNN: Precompute quantities for SLGP basis evaluation with weighted nearest-neighbors}
+\title{pre_comput_WNN: Precompute quantities for SLGP basis evaluation with weighted nearest-neighbours}
 \usage{
 pre_comput_WNN(
   normalizedData,
@@ -22,7 +22,7 @@ pre_comput_WNN(
 
 \item{nIntegral}{Number of quadrature points for response domain.}
 
-\item{nDiscret}{Number of discretization steps for covariates.}
+\item{nDiscret}{Number of discretisation steps for covariates.}
 }
 \value{
 A list of intermediate quantities:
@@ -35,6 +35,6 @@ A list of intermediate quantities:
 }
 \description{
 Computes intermediate quantities for evaluating basis functions via
-weighted nearest-neighbor (WNN) interpolation on a discretized grid.
+weighted nearest-neighbour (WNN) interpolation on a discretised grid.
 }
 \keyword{internal}

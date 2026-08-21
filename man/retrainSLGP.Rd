@@ -2,7 +2,7 @@
 % Please edit documentation in R/slgp.R
 \name{retrainSLGP}
 \alias{retrainSLGP}
-\title{Retrain a fitted SLGP model with new data and/or estimation method}
+\title{Refit an SLGP model}
 \usage{
 retrainSLGP(
   SLGPmodel,
@@ -17,6 +17,7 @@ retrainSLGP(
   seed = NULL,
   opts = list(),
   trend = NULL,
+  discrete = FALSE,
   verbose = FALSE
 )
 }
@@ -27,7 +28,8 @@ retrainSLGP(
 
 \item{epsilonStart}{Optional numeric vector with initial values for the coefficients \eqn{\epsilon}.}
 
-\item{method}{Character string specifying the estimation method: one of \{"MCMC", "MAP", "Laplace"\}.}
+\item{method}{Character string specifying the training method: one of
+\code{"none"}, \code{"MCMC"}, \code{"MAP"}, or \code{"Laplace"}.}
 
 \item{interpolateBasisFun}{Character string specifying how basis functions are evaluated:
 \itemize{
@@ -38,7 +40,7 @@ retrainSLGP(
 
 \item{nIntegral}{Integer specifying the number of quadrature points used to approximate integrals over the response domain.}
 
-\item{nDiscret}{Integer specifying the discretization grid size (used only if interpolation is enabled).}
+\item{nDiscret}{Integer specifying the discretisation grid size (used only if interpolation is enabled).}
 
 \item{hyperparams}{Optional list with updated hyperparameters. Must include:
 \itemize{
@@ -54,7 +56,10 @@ either \code{"none"} (default) or \code{"heuristic"}.}
 \item{opts}{Optional list of additional options passed to inference routines:
 \code{stan_chains}, \code{stan_iter}, \code{ndraws}, etc.}
 
-\item{trend}{Optional a function that returns the trend of the transformed GP (not to be estimated). If not provided, it defaults to 0.}
+\item{trend}{Optional function returning the trend of the transformed GP.
+If not provided, a zero trend is used.}
+
+\item{discrete}{Logical; whether the response is treated as discrete, defaults as \code{FALSE}.}
 
 \item{verbose}{Logical; if \code{TRUE}, print progress and diagnostic messages during computation.
 Defaults to \code{FALSE}.}
@@ -63,39 +68,13 @@ Defaults to \code{FALSE}.}
 An updated object of class \code{\link{SLGP-class}} with retrained coefficients and updated posterior information.
 }
 \description{
-This function retrains an existing SLGP model using either a Bayesian MCMC estimation,
-a Maximum A Posteriori (MAP) estimation, or a Laplace approximation. The model can be retrained
-using new data, new inference settings, or updated hyperparameters. It reuses the structure and
-basis functions from the original model.
-}
-\examples{
-\donttest{
-# Load Boston housing dataset
-library(MASS)
-data("Boston")
-range_x <- c(0, 100)
-range_response <- c(0, 50)
+\code{retrainSLGP()} is deprecated; use
+\code{\link[=update,SLGP-method]{update}(object, ...)} instead.
 
-#Create a SLGP model but don't fit it
-modelPrior <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-                 data = Boston,     # Use the original Boston housing data
-                 method = "none",    # No training
-                 basisFunctionsUsed = "RFF",         # Random Fourier Features
-                 sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-                 predictorsLower = range_x[1],         # Lower bound for 'age'
-                 predictorsUpper = range_x[2],         # Upper bound for 'age'
-                 responseRange = range_response,       # Range for 'medv'
-                 opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-                                      MatParam = 5/2), # Matern 5/2 kernel
-                 seed = 1)                             # Reproducibility
-#Retrain using the Boston Housing dataset and a Laplace approximation scheme
-modelLaplace <- retrainSLGP(SLGPmodel=modelPrior,
-                            newdata = Boston,
-                            method="Laplace")
+Re-estimates an existing SLGP model, optionally with new data, under a chosen
+estimation method while reusing the existing basis representation and model
+ranges.
 }
-
-}
-\references{
-Gautier, A. (2023). \emph{Modelling and Predicting Distribution-Valued Fields with Applications to Inversion Under Uncertainty}.
-PhD Thesis, Universität Bern. \url{https://boristheses.unibe.ch/4377/}
+\seealso{
+\code{\link[stats]{update}} for the recommended user interface.
 }

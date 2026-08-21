@@ -1,21 +1,77 @@
 #' SLGP: A package for spatially dependent probability distributions
 #'
-#' The `SLGP` package implements Spatial Logistic Gaussian Processes (SLGP) for the flexible modeling
-#' of conditional and spatially dependent probability distributions. The SLGP framework leverages
-#' basis-function expansions and sample-based inference (e.g., MAP, Laplace, MCMC) for efficient
-#' density estimation and uncertainty quantification. This package includes functionality to define,
-#' train, and sample from SLGP models, as well as visualization and diagnostic tools.
+#' The \pkg{SLGP} package provides tools for fitting, summarising, predicting,
+#' simulating, updating, and visualising Spatial Logistic Gaussian Processes models (SLGP).
+#' SLGP models define flexible conditional distributions through
+#' finite-rank Gaussian process representations and can be fitted by MAP,
+#' Laplace approximation, or MCMC
 #'
-#' @section SLGP functions:
-#' The core functions in the package include:
-#' - \code{\link{slgp}}: trains an SLGP model from formula, data, and hyperparameters.
-#' - \code{\link{predictSLGP_moments}}: computes posterior predictive means and variances.
-#' - \code{\link{predictSLGP_quantiles}}: computes posterior predictive quantiles.
-#' - \code{\link{sampleSLGP}}: draws samples from the posterior predictive SLGP.
-#' - \code{\link{retrainSLGP}}: retrains a fitted SLGP object with new parameters or method.
+#' @section Main user interface:
+#' The recommended workflow is based on standard R generics:
+#' \itemize{
+#'   \item \code{\link{slgp}}: fit or initialise an SLGP model.
+#'   \item \code{\link[base]{summary}}: summarise a fitted SLGP object.
+#'   \item \code{\link[graphics]{plot}}: visualise fitted conditional densities.
+#'   \item \code{\link[stats]{predict}}: compute densities, CDFs, quantiles,
+#'     or moments.
+#'   \item \code{\link[stats]{simulate}}: draw conditional samples.
+#'   \item \code{\link[stats]{update}}: refit an existing SLGP object.
+#'   \item \code{\link[stats]{coef}}, \code{\link[stats]{formula}}, and
+#'     \code{\link[stats]{nobs}}: standard extractors.
+#' }
 #'
-#' @name SLGP-package
+#' @section Low-level routines:
+#' The package also retains lower-level computational routines such as
+#' \code{\link{predictSLGP_newNode}}, \code{\link{predictSLGP_cdf}},
+#' \code{\link{predictSLGP_quantiles}}, \code{\link{predictSLGP_moments}},
+#' \code{\link{sampleSLGP}}, and \code{\link{retrainSLGP}}. These functions are
+#' primarily intended for advanced use and backward compatibility. For ordinary
+#' use, prefer the standard methods listed above.
+#'
+#'
+#' @section Typical workflow:
+#' A typical analysis consists of:
+#' \enumerate{
+#'   \item Fitting an SLGP model with \code{\link{slgp}}.
+#'   \item Inspecting the fitted model with \code{\link[base]{summary}} and
+#'     \code{\link[graphics]{plot}}.
+#'   \item Computing predictive quantities with
+#'     \code{\link[stats]{predict}}.
+#'   \item Drawing samples from the predictive distributions with
+#'     \code{\link[stats]{simulate}}.
+#'   \item Updating the fitted model with \code{\link[stats]{update}}, if
+#'     required.
+#' }
+#'
+#' @examples
+#' set.seed(1)
+#' d <- data.frame(
+#'   x = rep(seq(0, 1, length.out = 6), each = 5)
+#' )
+#' d$y <- rnorm(nrow(d), mean = sin(2 * pi * d$x), sd = 0.2)
+#'
+#' fit <- slgp(
+#'   y ~ x,
+#'   data = d,
+#'   method = "MAP",
+#'   basisFunctionsUsed = "RFF",
+#'   predictorsLower = 0,
+#'   predictorsUpper = 1,
+#'   responseRange = range(d$y),
+#'   opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2),
+#'   seed = 1
+#' )
+#'
+#' summary(fit)
+#'
+#' plot(fit, draw = c("mean", 1:5))
+#'
+#' @references
+#' Gautier, Athénaïs (2023). "Modelling and Predicting Distribution-Valued Fields with Applications to Inversion Under Uncertainty." Thesis, Universität Bern, Bern.
+#' See the thesis online at \url{https://boristheses.unibe.ch/4377/}
+#'
 #' @docType package
+#' @name SLGP-package
 #' @useDynLib SLGP, .registration = TRUE
 #' @import methods
 #' @import Rcpp
@@ -23,9 +79,4 @@
 #' @importFrom rstantools rstan_config
 #' @importFrom RcppParallel RcppParallelLibs
 #'
-#' @references
-#' Gautier, Athénaïs (2023). "Modelling and Predicting Distribution-Valued Fields with Applications to Inversion Under Uncertainty." Thesis, Universität Bern, Bern.
-#' See the thesis online at \url{https://boristheses.unibe.ch/4377/}
-#'
-#' @keywords internal
 "_PACKAGE"

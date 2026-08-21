@@ -55,7 +55,7 @@ normalize_data <- function(data, predictorNames, responseName, predictorsUpper =
 #' @param normalizedData A data frame with values already normalized to \eqn{[0,1]}.
 #' @param predictorNames Character vector of covariate column names.
 #' @param responseName Name of the response variable.
-#' @param nIntegral Integer, number of points used to discretize the response domain.
+#' @param nIntegral Integer, number of points used to discretise the response domain.
 #'
 #' @return A list of intermediate quantities used in SLGP basis function computation:
 #'   \itemize{
@@ -104,16 +104,16 @@ pre_comput_nothing <- function(normalizedData, predictorNames, responseName, nIn
   return(intermediate_quantities)
 }
 
-#' pre_comput_NN: Precompute quantities for SLGP basis evaluation with nearest-neighbor interpolation
+#' pre_comput_NN: Precompute quantities for SLGP basis evaluation with nearest-neighbour interpolation
 #'
 #' Computes intermediate quantities for evaluating SLGP basis functions using
-#' Nearest Neighbor (NN) interpolation over a regular grid in the normalized domain.
+#' Nearest neighbour (NN) interpolation over a regular grid in the normalized domain.
 #'
 #' @param normalizedData A normalized data frame (values in \eqn{[0,1]}).
 #' @param predictorNames Character vector of covariate names.
 #' @param responseName Name of the response variable.
-#' @param nIntegral Number of grid points for discretizing the response domain.
-#' @param nDiscret Number of grid points for discretizing the covariate domain.
+#' @param nIntegral Number of grid points for discretising the response domain.
+#' @param nDiscret Number of grid points for discretising the covariate domain.
 #'
 #' @return A list of intermediate quantities used in SLGP evaluation:
 #'   \itemize{
@@ -160,16 +160,16 @@ pre_comput_NN <- function(normalizedData, predictorNames, responseName, nIntegra
 }
 
 
-#' pre_comput_WNN: Precompute quantities for SLGP basis evaluation with weighted nearest-neighbors
+#' pre_comput_WNN: Precompute quantities for SLGP basis evaluation with weighted nearest-neighbours
 #'
 #' Computes intermediate quantities for evaluating basis functions via
-#' weighted nearest-neighbor (WNN) interpolation on a discretized grid.
+#' weighted nearest-neighbour (WNN) interpolation on a discretised grid.
 #'
 #' @param normalizedData Normalized data frame (\eqn{[0,1]}-scaled).
 #' @param predictorNames Character vector of covariate names.
 #' @param responseName Name of the response variable.
 #' @param nIntegral Number of quadrature points for response domain.
-#' @param nDiscret Number of discretization steps for covariates.
+#' @param nDiscret Number of discretisation steps for covariates.
 #'
 #' @return A list of intermediate quantities:
 #'   \itemize{

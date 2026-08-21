@@ -2,7 +2,7 @@
 % Please edit documentation in R/PredictAndSimulate.R
 \name{predictSLGP_quantiles}
 \alias{predictSLGP_quantiles}
-\title{Predict quantiles from a SLGP model at new locations}
+\title{Predict conditional quantiles}
 \usage{
 predictSLGP_quantiles(
   SLGPmodel,
@@ -17,57 +17,33 @@ predictSLGP_quantiles(
 \arguments{
 \item{SLGPmodel}{An object of class \code{\link{SLGP-class}}.}
 
-\item{newNodes}{A data frame of covariate values.}
+\item{newNodes}{A data frame containing the covariate columns at which
+quantiles are evaluated.}
 
-\item{probs}{Numeric vector of quantile levels to compute (e.g., 0.1, 0.5, 0.9).}
+\item{probs}{Numeric vector of probabilities in \eqn{(0, 1)}.}
 
-\item{interpolateBasisFun}{Character string specifying interpolation scheme: \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).}
+\item{interpolateBasisFun}{Character string specifying interpolation scheme:
+one of \code{"nothing"}, \code{"NN"}, or \code{"WNN"} (default).}
 
 \item{nIntegral}{Number of integration points for computing the SLGP outputs.}
 
-\item{nDiscret}{Discretization level of the response axis (for CDF inversion).}
+\item{nDiscret}{discretisation resolution used for CDF inversion.}
 
 \item{discrete}{Boolean, indicates if we work with continuous pdfs (default, FALSE) or discrete probabilities}
 }
 \value{
-A data frame with columns:
-\itemize{
-\item The covariates in \code{newNodes} (repeated per quantile level),
-\item A column \code{probs} indicating the quantile level,
-\item Columns \code{qSLGP_1}, \code{qSLGP_2}, ... for each posterior sample's quantile estimate.
-}
+A data frame containing the covariates in \code{newNodes}, a column
+\code{probs}, and columns named \code{qSLGP_1}, \code{qSLGP_2}, ...,
+containing predictive quantiles for each coefficient draw stored in
+\code{SLGPmodel}.
 }
 \description{
-Computes quantile values at specified levels (\code{probs}) for new covariate points,
-based on the posterior CDFs from a trained SLGP model.
+\code{predictSLGP_quantiles()} is deprecated; use
+\code{\link[=predict,SLGP-method]{predict}(object, type = "quantiles")} instead.
+
+Computes predictive quantiles at specified covariate locations by numerical
+inversion of the posterior predictive CDF.
 }
-\examples{
-\donttest{
-# Load Boston housing dataset
-library(MASS)
-data("Boston")
-# Set input and output ranges manually (you can also use range(Boston$age), etc.)
-range_x <- c(0, 100)
-range_response <- c(0, 50)
-
-# Train an SLGP model using Laplace estimation and RFF basis
-modelLaplace <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-                 data = Boston,     # Use the original Boston housing data
-                 method = "Laplace",    # Train using Maximum A Posteriori estimation
-                 basisFunctionsUsed = "RFF",         # Random Fourier Features
-                 sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-                 predictorsLower = range_x[1],         # Lower bound for 'age'
-                 predictorsUpper = range_x[2],         # Upper bound for 'age'
-                 responseRange = range_response,       # Range for 'medv'
-                 opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-                                      MatParam = 5/2), # Matern 5/2 kernel
-                 seed = 1)                             # Reproducibility
-dfX <- data.frame(age=seq(range_x[1], range_x[2], 1))
-# Predict some quantiles, for instance here the first quartile, median, third quartile
-predQuartiles <- predictSLGP_quantiles(SLGPmodel= modelLaplace,
-                                       newNodes = dfX,
-                                       probs=c(0.25, 0.50, 0.75))
-
-}
-
+\seealso{
+\code{\link[stats]{predict}} for the recommended user interface.
 }

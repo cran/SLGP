@@ -18,7 +18,7 @@ pre_comput_nothing(
 
 \item{responseName}{Name of the response variable.}
 
-\item{nIntegral}{Integer, number of points used to discretize the response domain.}
+\item{nIntegral}{Integer, number of points used to discretise the response domain.}
 }
 \value{
 A list of intermediate quantities used in SLGP basis function computation:

@@ -2,7 +2,7 @@
 % Please edit documentation in R/slgp.R
 \name{slgp}
 \alias{slgp}
-\title{Define and can train a Spatial Logistic Gaussian Process (SLGP) model}
+\title{Fit a Spatial Logistic Gaussian Process model}
 \usage{
 slgp(
   formula,
@@ -23,6 +23,7 @@ slgp(
   BasisFunParam = NULL,
   opts = list(),
   trend = NULL,
+  discrete = FALSE,
   verbose = FALSE
 )
 }
@@ -34,7 +35,8 @@ slgp(
 \item{epsilonStart}{Optional numeric vector of initial weights for the finite-rank GP:
 \eqn{Z(x,t) = \sum_{i=1}^p \epsilon_i f_i(x, t)}.}
 
-\item{method}{Character string specifying the training method: one of \{"none", "MCMC", "MAP", "Laplace"\}.}
+\item{method}{Character string specifying the training method: one of
+\code{"none"}, \code{"MCMC"}, \code{"MAP"}, or \code{"Laplace"}.}
 
 \item{basisFunctionsUsed}{Character string describing the basis function type:
 one of "inducing points", "RFF", "Discrete FF", "filling FF", or "custom cosines".}
@@ -69,61 +71,50 @@ Either "none" (default) or "heuristic".}
 
 \item{opts}{Optional list of extra settings passed to inference routines (e.g., \code{stan_iter}, \code{stan_chains}, \code{ndraws}).}
 
-\item{trend}{Optional a function that returns the trend of the transformed GP (not to be estimated). If not provided, it defaults to 0.}
+\item{trend}{Optional function returning the trend of the transformed GP.
+If not provided, a zero trend is used.}
+
+\item{discrete}{Logical; whether the response is treated as discrete, defaults as \code{FALSE}.}
 
 \item{verbose}{Logical; if \code{TRUE}, print progress and diagnostic messages during computation.
 Defaults to \code{FALSE}.}
 }
 \value{
-An object of S4 class \code{\link{SLGP-class}}, containing:
-\describe{
-\item{coefficients}{Matrix of posterior (or prior) draws of the SLGP coefficients \eqn{\epsilon_i}.}
-\item{hyperparams}{List of fitted or provided hyperparameters.}
-\item{logPost}{Log-posterior (if MAP or Laplace used).}
-\item{method}{Estimation method used.}
-\item{...}{Other internal information such as ranges, basis settings, and data.}
-}
+An object of S4 class \code{\link{SLGP-class}}. Standard methods are
+available for fitted objects, including \code{\link[base]{summary}},
+\code{\link[graphics]{plot}}, \code{\link[stats]{predict}},
+\code{\link[stats]{simulate}}, \code{\link[stats]{update}},
+\code{\link[stats]{coef}}, \code{\link[stats]{formula}}, and
+\code{\link[stats]{nobs}}.
 }
 \description{
-This function builds and trains an SLGP model based on a specified formula and data.
-The SLGP is a finite-rank Gaussian process model for conditional density estimation,
-trained using MAP, MCMC, Laplace approximation, or left untrained ("none").
+Builds a finite-rank Spatial Logistic Gaussian Process (SLGP) model for
+conditional density estimation. The model can be fitted by MAP, MCMC, or
+Laplace approximation, or initialised without fitting by setting
+\code{method = "none"}.
 }
 \examples{
-\donttest{
-# Load Boston housing dataset
-library(MASS)
-data("Boston")
-# Set input and output ranges manually (you can also use range(Boston$age), etc.)
-range_x <- c(0, 100)
-range_response <- c(0, 50)
+set.seed(1)
+d <- data.frame(
+  x = rep(seq(0, 1, length.out = 6), each = 5)
+)
+d$y <- rnorm(nrow(d), mean = sin(2 * pi * d$x), sd = 0.2)
 
-#' #Create a SLGP model but don't fit it
-modelPrior <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-                 data = Boston,     # Use the original Boston housing data
-                 method = "none",    # No training
-                 basisFunctionsUsed = "RFF",         # Random Fourier Features
-                 sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-                 predictorsLower = range_x[1],         # Lower bound for 'age'
-                 predictorsUpper = range_x[2],         # Upper bound for 'age'
-                 responseRange = range_response,       # Range for 'medv'
-                 opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-                                      MatParam = 5/2), # Matern 5/2 kernel
-                 seed = 1)                             # Reproducibility
+fit <- slgp(
+  y ~ x,
+  data = d,
+  method = "none",
+  basisFunctionsUsed = "RFF",
+  predictorsLower = 0,
+  predictorsUpper = 1,
+  responseRange = range(d$y),
+  opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2),
+  seed = 1
+)
 
-# Train an SLGP model using MAP estimation and RFF basis
-modelMAP <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-                 data = Boston,     # Use the original Boston housing data
-                 method = "MAP",    # Train using Maximum A Posteriori estimation
-                 basisFunctionsUsed = "RFF",         # Random Fourier Features
-                 sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-                 predictorsLower = range_x[1],         # Lower bound for 'age'
-                 predictorsUpper = range_x[2],         # Upper bound for 'age'
-                 responseRange = range_response,       # Range for 'medv'
-                 opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-                                      MatParam = 5/2),  # Matern 5/2 kernel
-                 seed = 1)                             # Reproducibility
-}
+fit
+summary(fit)
+
 }
 \references{
 Gautier, Athénaïs (2023). "Modelling and Predicting Distribution-Valued Fields with Applications to Inversion Under Uncertainty." Thesis, Universität Bern, Bern.

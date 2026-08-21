@@ -1,7 +1,7 @@
 #' The SLGP S4 Class: Spatial Logistic Gaussian Process Model
 #'
 #' This S4 class represents a Spatial Logistic Gaussian Process (SLGP) model, designed for
-#' modeling conditional or spatially dependent probability distributions. It encapsulates all
+#' modelling conditional or spatially dependent probability distributions. It encapsulates all
 #' necessary components for training, sampling, and prediction, including the basis function
 #' setup, learned coefficients, and fitted hyperparameters.
 #'

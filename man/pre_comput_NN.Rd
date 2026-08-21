@@ -2,7 +2,7 @@
 % Please edit documentation in R/datamanagement.R
 \name{pre_comput_NN}
 \alias{pre_comput_NN}
-\title{pre_comput_NN: Precompute quantities for SLGP basis evaluation with nearest-neighbor interpolation}
+\title{pre_comput_NN: Precompute quantities for SLGP basis evaluation with nearest-neighbour interpolation}
 \usage{
 pre_comput_NN(
   normalizedData,
@@ -19,9 +19,9 @@ pre_comput_NN(
 
 \item{responseName}{Name of the response variable.}
 
-\item{nIntegral}{Number of grid points for discretizing the response domain.}
+\item{nIntegral}{Number of grid points for discretising the response domain.}
 
-\item{nDiscret}{Number of grid points for discretizing the covariate domain.}
+\item{nDiscret}{Number of grid points for discretising the covariate domain.}
 }
 \value{
 A list of intermediate quantities used in SLGP evaluation:
@@ -34,6 +34,6 @@ A list of intermediate quantities used in SLGP evaluation:
 }
 \description{
 Computes intermediate quantities for evaluating SLGP basis functions using
-Nearest Neighbor (NN) interpolation over a regular grid in the normalized domain.
+Nearest neighbour (NN) interpolation over a regular grid in the normalized domain.
 }
 \keyword{internal}

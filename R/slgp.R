@@ -1,8 +1,9 @@
-#' Define and can train a Spatial Logistic Gaussian Process (SLGP) model
+#' Fit a Spatial Logistic Gaussian Process model
 #'
-#' This function builds and trains an SLGP model based on a specified formula and data.
-#' The SLGP is a finite-rank Gaussian process model for conditional density estimation,
-#' trained using MAP, MCMC, Laplace approximation, or left untrained ("none").
+#' Builds a finite-rank Spatial Logistic Gaussian Process (SLGP) model for
+#' conditional density estimation. The model can be fitted by MAP, MCMC, or
+#' Laplace approximation, or initialised without fitting by setting
+#' \code{method = "none"}.
 #'
 #'
 #'
@@ -10,7 +11,8 @@
 #' @param data A data frame containing the variables used in the formula.
 #' @param epsilonStart Optional numeric vector of initial weights for the finite-rank GP:
 #'   \eqn{Z(x,t) = \sum_{i=1}^p \epsilon_i f_i(x, t)}.
-#' @param method Character string specifying the training method: one of \{"none", "MCMC", "MAP", "Laplace"\}.
+#' @param method Character string specifying the training method: one of
+#'   \code{"none"}, \code{"MCMC"}, \code{"MAP"}, or \code{"Laplace"}.
 #' @param basisFunctionsUsed Character string describing the basis function type:
 #'   one of "inducing points", "RFF", "Discrete FF", "filling FF", or "custom cosines".
 #' @param interpolateBasisFun Character string indicating how to evaluate basis functions:
@@ -31,58 +33,45 @@
 #' @param opts_BasisFun List of optional configuration parameters passed to the basis function initializer.
 #' @param BasisFunParam Optional list of precomputed basis function parameters.
 #' @param opts Optional list of extra settings passed to inference routines (e.g., \code{stan_iter}, \code{stan_chains}, \code{ndraws}).
-#' @param trend Optional a function that returns the trend of the transformed GP (not to be estimated). If not provided, it defaults to 0.
+#' @param trend Optional function returning the trend of the transformed GP.
+#'   If not provided, a zero trend is used.
+#' @param discrete Logical; whether the response is treated as discrete, defaults as \code{FALSE}.
 #' @param verbose Logical; if \code{TRUE}, print progress and diagnostic messages during computation.
 #'   Defaults to \code{FALSE}.
 #'
-#' @return An object of S4 class \code{\link{SLGP-class}}, containing:
-#' \describe{
-#'   \item{coefficients}{Matrix of posterior (or prior) draws of the SLGP coefficients \eqn{\epsilon_i}.}
-#'   \item{hyperparams}{List of fitted or provided hyperparameters.}
-#'   \item{logPost}{Log-posterior (if MAP or Laplace used).}
-#'   \item{method}{Estimation method used.}
-#'   \item{...}{Other internal information such as ranges, basis settings, and data.}
-#' }
+#' @return An object of S4 class \code{\link{SLGP-class}}. Standard methods are
+#'   available for fitted objects, including \code{\link[base]{summary}},
+#'   \code{\link[graphics]{plot}}, \code{\link[stats]{predict}},
+#'   \code{\link[stats]{simulate}}, \code{\link[stats]{update}},
+#'   \code{\link[stats]{coef}}, \code{\link[stats]{formula}}, and
+#'   \code{\link[stats]{nobs}}.
 #'
 #' @importFrom stats rnorm median
 #' @importFrom mvnfast rmvn
 #' @export
 #'
 #' @examples
-#' \donttest{
-#' # Load Boston housing dataset
-#' library(MASS)
-#' data("Boston")
-#' # Set input and output ranges manually (you can also use range(Boston$age), etc.)
-#' range_x <- c(0, 100)
-#' range_response <- c(0, 50)
+#' set.seed(1)
+#' d <- data.frame(
+#'   x = rep(seq(0, 1, length.out = 6), each = 5)
+#' )
+#' d$y <- rnorm(nrow(d), mean = sin(2 * pi * d$x), sd = 0.2)
 #'
-#'#' #Create a SLGP model but don't fit it
-#' modelPrior <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-#'                  data = Boston,     # Use the original Boston housing data
-#'                  method = "none",    # No training
-#'                  basisFunctionsUsed = "RFF",         # Random Fourier Features
-#'                  sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-#'                  predictorsLower = range_x[1],         # Lower bound for 'age'
-#'                  predictorsUpper = range_x[2],         # Upper bound for 'age'
-#'                  responseRange = range_response,       # Range for 'medv'
-#'                  opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-#'                                       MatParam = 5/2), # Matern 5/2 kernel
-#'                  seed = 1)                             # Reproducibility
+#' fit <- slgp(
+#'   y ~ x,
+#'   data = d,
+#'   method = "none",
+#'   basisFunctionsUsed = "RFF",
+#'   predictorsLower = 0,
+#'   predictorsUpper = 1,
+#'   responseRange = range(d$y),
+#'   opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2),
+#'   seed = 1
+#' )
 #'
-#' # Train an SLGP model using MAP estimation and RFF basis
-#' modelMAP <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-#'                  data = Boston,     # Use the original Boston housing data
-#'                  method = "MAP",    # Train using Maximum A Posteriori estimation
-#'                  basisFunctionsUsed = "RFF",         # Random Fourier Features
-#'                  sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-#'                  predictorsLower = range_x[1],         # Lower bound for 'age'
-#'                  predictorsUpper = range_x[2],         # Upper bound for 'age'
-#'                  responseRange = range_response,       # Range for 'medv'
-#'                  opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-#'                                       MatParam = 5/2),  # Matern 5/2 kernel
-#'                  seed = 1)                             # Reproducibility
-#' }
+#' fit
+#' summary(fit)
+#'
 #' @references
 #' Gautier, Athénaïs (2023). "Modelling and Predicting Distribution-Valued Fields with Applications to Inversion Under Uncertainty." Thesis, Universität Bern, Bern.
 #' \url{https://boristheses.unibe.ch/4377/}
@@ -105,6 +94,7 @@ slgp <- function(formula,
                  BasisFunParam = NULL,
                  opts = list(),
                  trend = NULL,
+                 discrete=FALSE,
                  verbose = FALSE) {
   if(!is.null(seed)){
     set.seed(seed)
@@ -122,7 +112,14 @@ slgp <- function(formula,
   if (!all(predictorNames %in% names(data))) {
     stop("Not all predictor variables in the formula are present in the data.")
   }
-  #
+  #Match arguments
+  method <- match.arg(method, c("none", "MCMC", "MAP", "Laplace"))
+  basisFunctionsUsed <- match.arg(
+    basisFunctionsUsed,
+    c("inducing points", "RFF", "Discrete FF", "filling FF", "custom cosines")
+  )
+  interpolateBasisFun <- match.arg(interpolateBasisFun, c("nothing", "NN", "WNN"))
+  sigmaEstimationMethod <- match.arg(sigmaEstimationMethod, c("none", "heuristic"))
   ## Bring the range of data to [0, 1]
   if(is.null(predictorsUpper)){
     predictorsUpper<- apply(data[, predictorNames, drop=FALSE], 2, max)
@@ -214,10 +211,10 @@ slgp <- function(formula,
     sigma2 <- median(5/resSim)
   }
 
-  if(is.null(opts$discrete)){
+  if(!(discrete)){
     weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
   }else{
-    if(opts$discrete){
+    if(discrete){
       weightQuadrature <- rep(1, nIntegral)
     }else{
       weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
@@ -226,13 +223,7 @@ slgp <- function(formula,
 
   # Create the data list required for the estimation method selected
   if(interpolateBasisFun == "WNN"){
-    if(file.exists("./inst/extdata/composed_model.rds")){
-      stan_model <- readRDS(system.file("extdata", "composed_model.rds", package = "SLGP"))
-    }else{
-      stan_model_path <- system.file("stan", "likelihoodComposed.stan", package = "SLGP")
-      # Load and compile the Stan model
-      stan_model <- rstan::stan_model(stan_model_path, model_name = "SLGP_Likelihood_composed")
-    }
+    stan_model <- stanmodels$likelihoodComposed
     temp <- intermediateQuantities$indSamplesToNodes
     temp[is.na(temp)]<- 1
     temp2 <- intermediateQuantities$weightSamplesToNodes
@@ -252,13 +243,7 @@ slgp <- function(formula,
       trendValues = trendValues
     )
   }else{
-    if(file.exists("./inst/extdata/simple_model.rds")){
-      stan_model <- readRDS(system.file("extdata", "simple_model.rds", package = "SLGP"))
-    }else{
-      stan_model_path <- system.file("stan", "likelihoodSimple.stan", package = "SLGP")
-      # Load and compile the Stan model
-      stan_model <- rstan::stan_model(stan_model_path, model_name = "SLGP_Likelihood_simple")
-    }
+    stan_model <- stanmodels$likelihoodSimple
     if(interpolateBasisFun=="nothing"){
       stan_data <- list(
         n = nrow(intermediateQuantities$indSamplesToNodes),
@@ -394,24 +379,29 @@ slgp <- function(formula,
               logPost=logPost))
 }
 
-#' Retrain a fitted SLGP model with new data and/or estimation method
 #'
-#' This function retrains an existing SLGP model using either a Bayesian MCMC estimation,
-#' a Maximum A Posteriori (MAP) estimation, or a Laplace approximation. The model can be retrained
-#' using new data, new inference settings, or updated hyperparameters. It reuses the structure and
-#' basis functions from the original model.
+#' Refit an SLGP model
+#'
+#' @description
+#' `retrainSLGP()` is deprecated; use
+#' \code{\link[=update,SLGP-method]{update}(object, ...)} instead.
+#'
+#' Re-estimates an existing SLGP model, optionally with new data, under a chosen
+#' estimation method while reusing the existing basis representation and model
+#' ranges.
 #'
 #' @param SLGPmodel An object of class \code{\link{SLGP-class}} to be retrained.
 #' @param newdata Optional data frame containing new observations. If \code{NULL}, the original data is reused.
 #' @param epsilonStart Optional numeric vector with initial values for the coefficients \eqn{\epsilon}.
-#' @param method Character string specifying the estimation method: one of \{"MCMC", "MAP", "Laplace"\}.
+#' @param method Character string specifying the training method: one of
+#'   \code{"none"}, \code{"MCMC"}, \code{"MAP"}, or \code{"Laplace"}.
 #' @param interpolateBasisFun Character string specifying how basis functions are evaluated:
 #'   \itemize{
 #'     \item \code{"nothing"} — evaluate directly at sample locations;
 #'     \item \code{"NN"} — interpolate using nearest neighbor;
 #'     \item \code{"WNN"} — interpolate using weighted nearest neighbors (default).
 #'   }
-#' @param nDiscret Integer specifying the discretization grid size (used only if interpolation is enabled).
+#' @param nDiscret Integer specifying the discretisation grid size (used only if interpolation is enabled).
 #' @param nIntegral Integer specifying the number of quadrature points used to approximate integrals over the response domain.
 #' @param hyperparams Optional list with updated hyperparameters. Must include:
 #'   \itemize{
@@ -423,7 +413,9 @@ slgp <- function(formula,
 #' @param seed Optional integer to set the random seed for reproducibility.
 #' @param opts Optional list of additional options passed to inference routines:
 #'   \code{stan_chains}, \code{stan_iter}, \code{ndraws}, etc.
-#' @param trend Optional a function that returns the trend of the transformed GP (not to be estimated). If not provided, it defaults to 0.
+#' @param trend Optional function returning the trend of the transformed GP.
+#'   If not provided, a zero trend is used.
+#' @param discrete Logical; whether the response is treated as discrete, defaults as \code{FALSE}.
 #' @param verbose Logical; if \code{TRUE}, print progress and diagnostic messages during computation.
 #'   Defaults to \code{FALSE}.
 #'
@@ -432,38 +424,8 @@ slgp <- function(formula,
 #' @importFrom stats rnorm
 #' @importFrom mvnfast rmvn
 #'
+#' @seealso \code{\link[stats]{update}} for the recommended user interface.
 #' @export
-#'
-#' @references
-#' Gautier, A. (2023). *Modelling and Predicting Distribution-Valued Fields with Applications to Inversion Under Uncertainty*.
-#' PhD Thesis, Universität Bern. \url{https://boristheses.unibe.ch/4377/}
-#'
-#' @examples
-#' \donttest{
-#' # Load Boston housing dataset
-#' library(MASS)
-#' data("Boston")
-#' range_x <- c(0, 100)
-#' range_response <- c(0, 50)
-#'
-#' #Create a SLGP model but don't fit it
-#' modelPrior <- slgp(medv ~ age,        # Use a formula to specify response and covariates
-#'                  data = Boston,     # Use the original Boston housing data
-#'                  method = "none",    # No training
-#'                  basisFunctionsUsed = "RFF",         # Random Fourier Features
-#'                  sigmaEstimationMethod = "heuristic",  # Auto-tune sigma2 (more stable)
-#'                  predictorsLower = range_x[1],         # Lower bound for 'age'
-#'                  predictorsUpper = range_x[2],         # Upper bound for 'age'
-#'                  responseRange = range_response,       # Range for 'medv'
-#'                  opts_BasisFun = list(nFreq = 200,     # Use 200 Fourier features
-#'                                       MatParam = 5/2), # Matern 5/2 kernel
-#'                  seed = 1)                             # Reproducibility
-#' #Retrain using the Boston Housing dataset and a Laplace approximation scheme
-#' modelLaplace <- retrainSLGP(SLGPmodel=modelPrior,
-#'                             newdata = Boston,
-#'                             method="Laplace")
-#' }
-#'
 retrainSLGP <- function(SLGPmodel,
                         newdata=NULL,
                         epsilonStart =NULL,
@@ -476,7 +438,42 @@ retrainSLGP <- function(SLGPmodel,
                         seed=NULL,
                         opts = list(),
                         trend=NULL,
+                        discrete=FALSE,
                         verbose = FALSE) {
+  .Deprecated(msg = paste("retrainSLGP() is deprecated;",
+                          "use update(object, ...)."))
+  .retrain_SLGP(SLGPmodel = SLGPmodel,
+                newdata = newdata,
+                epsilonStart = epsilonStart,
+                method = method,
+                interpolateBasisFun = interpolateBasisFun,
+                nIntegral = nIntegral,
+                nDiscret = nDiscret,
+                hyperparams = hyperparams,
+                sigmaEstimationMethod = sigmaEstimationMethod,
+                seed = seed,
+                opts = opts,
+                trend = trend,
+                discrete = discrete,
+                verbose = verbose)
+}
+
+#' Internal worker for retrainSLGP / update()
+#' @noRd
+.retrain_SLGP <- function(SLGPmodel,
+                          newdata=NULL,
+                          epsilonStart =NULL,
+                          method,
+                          interpolateBasisFun="WNN",
+                          nIntegral=101,
+                          nDiscret=101,
+                          hyperparams = NULL,
+                          sigmaEstimationMethod = "none",
+                          seed=NULL,
+                          opts = list(),
+                          trend=NULL,
+                          discrete=FALSE,
+                          verbose = FALSE) {
   if(!is.null(seed)){
     set.seed(seed)
   }
@@ -557,10 +554,10 @@ retrainSLGP <- function(SLGPmodel,
     trendValues <- trend(df=dftrend)
     rm(dftrend)
   }
-  if(is.null(opts$discrete)){
+  if(!discrete){
     weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
   }else{
-    if(opts$discrete){
+    if(discrete){
       weightQuadrature <- rep(1, nIntegral)
     }else{
       weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
