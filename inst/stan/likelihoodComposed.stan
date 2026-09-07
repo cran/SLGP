@@ -6,7 +6,7 @@ functions {
   int nNeigh,
   matrix functionValues,
   matrix weightMatrix,
-  int[,] indMatrix,
+  array[,] int indMatrix,
   vector weightQuadrature,
   vector trendValues) {
     vector[rows(functionValues)] Z = functionValues * epsilon + trendValues;
@@ -46,7 +46,7 @@ data {
   int<lower=1> p; 										// assuming the length of epsilon
   matrix[nIntegral*nPredictors, p] functionValues;
   matrix[n, nNeigh] weightMatrix;
-  int indMatrix[n, nNeigh];
+  array[n, nNeigh] int indMatrix;
   vector[nIntegral] weightQuadrature;
   matrix[p, p] Sigma;      								// Covariance matrix
   vector[p] mean_x;           							// Vector of mean value of the prior

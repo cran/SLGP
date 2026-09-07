@@ -8,7 +8,7 @@
   x,
   y,
   newdata = NULL,
-  n_slices = 8,
+  n_slices = 6,
   n_response = 101,
   interpolateBasisFun = "WNN",
   draw = "mean",

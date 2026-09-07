@@ -1,7 +1,7 @@
 Package: SLGP
 Type: Package
 Title: Spatial Logistic Gaussian Process for Field Density Estimation
-Version: 1.1.0
+Version: 1.1.1
 Authors@R: 
     c(person(given = "Athénaïs",
              family = "Gautier",
@@ -37,7 +37,7 @@ Suggests: knitr, rmarkdown, tidyr, dplyr, ggplot2, ggpubr, viridis,
         MASS
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2026-08-21 21:28:54 UTC; agautier
+Packaged: 2026-09-07 17:44:43 UTC; agautier
 Author: Athénaïs Gautier [aut, cre]
 Repository: CRAN
-Date/Publication: 2026-08-21 23:40:02 UTC
+Date/Publication: 2026-09-07 18:20:02 UTC

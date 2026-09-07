@@ -557,7 +557,7 @@ setMethod("update", signature(object = "SLGP"),
 #' @export
 setMethod("plot", signature(x = "SLGP", y = "missing"),
           function(x, y, newdata = NULL,
-                   n_slices = 8, n_response = 101,
+                   n_slices = 6, n_response = 101,
                    interpolateBasisFun = "WNN", draw = "mean",
                    panels = TRUE, discrete = FALSE, ...) {
             if (length(x@covariateName) != 1L)
@@ -643,8 +643,8 @@ setMethod("plot", signature(x = "SLGP", y = "missing"),
               oldpar <- par(no.readonly = TRUE)
               on.exit(par(oldpar), add = TRUE)
 
-              nr <- ceiling(sqrt(length(x_slices)))
-              nc <- ceiling(length(x_slices) / nr)
+              nc <- ceiling(sqrt(length(x_slices)))
+              nr <- ceiling(length(x_slices) / nc)
               par(mfrow = c(nr, nc))
 
               ymax <- max(unlist(dens), na.rm = TRUE)

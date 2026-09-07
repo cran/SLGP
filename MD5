@@ -1,4 +1,4 @@
-78cfe7043dd9be0a3d3e6cb2efa6ace2 *DESCRIPTION
+32bea01c4fab90f2d744413f67bbd176 *DESCRIPTION
 c827fbb472fa70e3d4a770f464f23982 *NAMESPACE
 82e6e25162e864d125823ce4ba0f4b4f *R/PredictAndSimulate.R
 ad9798299c88d7a909813cbb01fb2459 *R/RcppExports.R
@@ -6,7 +6,7 @@ ad9798299c88d7a909813cbb01fb2459 *R/RcppExports.R
 beca70184acc78e0283f4abbc9b52eab *R/SLGPclass.R
 a2dc6d845b777d2bdbd3ecf223070449 *R/basisFunInitAndCompute.R
 a0adde18379919cfde8c8db813cd3ecc *R/datamanagement.R
-eca4a72e78730c6867c89c91a7040f70 *R/methods.R
+234632c8642fa9a7f8990af5c11ddc23 *R/methods.R
 80f4c2b6e1f9d246e3f2e97990945e01 *R/miscFunctions.R
 d1de9c8013c7b48e8098c9c25762b7f4 *R/slgp.R
 081aab18b1714a1bcd95e76d4d17f5cd *R/stanmodels.R
@@ -15,13 +15,13 @@ fb7e67fc18ea646c266aa403ed402817 *build/vignette.rds
 c2797e661454992db32ddc9e6a0bd541 *configure.win
 c9045df6db9d488f00da76c0b53bed60 *inst/doc/IntroductionSLGP.R
 887c94c24c637859ee14b9fb0c9d6195 *inst/doc/IntroductionSLGP.Rmd
-4194908b9beb8b1ec88f2b0421da742f *inst/doc/IntroductionSLGP.html
+2c37b522e18207bf652b81e47a519bc7 *inst/doc/IntroductionSLGP.html
 b00847bfaf275e864e691eb1fc9f1aef *inst/doc/SLGPdiscrete.R
 7c81b94fe0e1cf3cb45b533526c53fb7 *inst/doc/SLGPdiscrete.Rmd
-80c58e74ee12960e70bd46176eb09354 *inst/doc/SLGPdiscrete.html
+80dcaded689e971f59198f5230419570 *inst/doc/SLGPdiscrete.html
 855c064dbf8deaff96c8dc8a87169109 *inst/include/stan_meta_header.hpp
 3185ca3d0fff46a4f0f5811d3cbf5d9c *inst/stan/include/license.stan
-5bb21a0ebac815a221afecfa002fa9b8 *inst/stan/likelihoodComposed.stan
+cf60f74be887428dd3f857e11cae0389 *inst/stan/likelihoodComposed.stan
 1b6ea4e90f1a7ed7c9c9ff793ea94350 *inst/stan/likelihoodSimple.stan
 1a5084736529101eab8cc1f2b0572f93 *man/SLGP-class.Rd
 aa7549c5205463971e303f76ed1fae21 *man/SLGP-package.Rd
@@ -37,7 +37,7 @@ e4388e8d79b38bff98fdc2b50bc185cd *man/initialize_basisfun_discreteFF.Rd
 b7cf18587914b36588a8e74248bc12df *man/initialize_basisfun_inducingpt.Rd
 16d55a99fb5954aa4e87d1be59aa7872 *man/nobs-SLGP-method.Rd
 8424d6e26d6cd593fc73e5c1e9abd375 *man/normalize_data.Rd
-49520fc1a4b59267a723cbc0f5394ee7 *man/plot-SLGP-missing-method.Rd
+b290c1c05405d72b9a78b48b4348e5b8 *man/plot-SLGP-missing-method.Rd
 c1c0322b8b9dd2d3edcb0e2bdbe0e66b *man/pre_comput_NN.Rd
 c2df96a999c8d56c4ef4b1c22a2e50a3 *man/pre_comput_WNN.Rd
 0609a9a4c9f35586db4d4d0076ffb4bd *man/pre_comput_nothing.Rd
@@ -59,7 +59,7 @@ caf4cfa219cdc678546e983f706908a4 *src/Makevars.win
 7ab33ebd325be65982523a45fd8dc127 *src/RcppExports.cpp
 02ff726b83e70c5bbfb3d34dcc3cceb8 *src/crossdist.cpp
 0a5293d7e3bbd2d159a334b450073c68 *src/stanExports_likelihoodComposed.cc
-af68405ef503f0fd348dae3eda872b70 *src/stanExports_likelihoodComposed.h
+760d4d972b4a0e937c237c2c328442f3 *src/stanExports_likelihoodComposed.h
 1c55ce8695260d287fc0e4789ebbbffc *src/stanExports_likelihoodSimple.cc
 8ad2b864a2fd2d710cf99f20d95f29b4 *src/stanExports_likelihoodSimple.h
 887c94c24c637859ee14b9fb0c9d6195 *vignettes/IntroductionSLGP.Rmd
