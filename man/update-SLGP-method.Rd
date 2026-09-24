@@ -10,9 +10,9 @@
   newdata = NULL,
   epsilonStart = NULL,
   interpolateBasisFun = "WNN",
-  nIntegral = 101,
+  nIntegral = NULL,
   nDiscret = 101,
-  discrete = FALSE,
+  discrete = NULL,
   hyperparams = NULL,
   sigmaEstimationMethod = "none",
   seed = NULL,
@@ -25,8 +25,8 @@
 \arguments{
 \item{object}{An object of class \code{\link{SLGP-class}}.}
 
-\item{method}{Estimation method: one of \code{"MCMC"}, \code{"MAP"},
-\code{"Laplace"}.}
+\item{method}{Estimation method: one of \code{"none"}, \code{"Prior"},
+\code{"MCMC"}, \code{"MAP"}, \code{"Laplace"}.}
 
 \item{newdata}{Optional new \code{data.frame}; if \code{NULL}, the model's
 stored data are reused.}
@@ -35,10 +35,13 @@ stored data are reused.}
 
 \item{interpolateBasisFun}{Integral-approximation scheme; default \code{"WNN"}.}
 
-\item{nIntegral, nDiscret}{Integration / discretisation resolutions.}
+\item{nIntegral, nDiscret}{Integration / discretisation resolutions. If
+\code{nIntegral} is \code{NULL} (default), the value recorded in
+\code{object} is reused.}
 
 \item{discrete}{Logical; whether the response is treated as discrete.
-Default \code{FALSE}.}
+If \code{NULL} (default), the value recorded in \code{object} is reused, so
+that re-fitting a discrete model does not silently turn it into a continuous one.}
 
 \item{hyperparams}{Optional list of hyperparameters; if \code{NULL}, those of
 \code{object} are reused.}
@@ -66,25 +69,17 @@ chosen estimation method, reusing the existing basis and ranges.
 }
 \examples{
 set.seed(1)
-d <- data.frame(
-  x = rep(seq(0, 1, length.out = 6), each = 5)
-)
+d <- data.frame(x = rep(seq(0, 1, length.out = 6), each = 5))
 d$y <- rnorm(nrow(d), mean = sin(2 * pi * d$x), sd = 0.2)
 
-prior <- slgp(
-  y ~ x,
-  data = d,
-  method = "none",
-  basisFunctionsUsed = "RFF",
-  predictorsLower = 0,
-  predictorsUpper = 1,
-  responseRange = range(d$y),
-  opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2),
-  seed = 1
-)
+fit_prior <- slgp(y ~ x,
+  data = d, method = "Prior", basisFunctionsUsed = "RFF",
+  predictorsLower = 0, predictorsUpper = 1,
+  responseRange = range(d$y), seed = 1,
+  opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2))
 
 ## Refit the same model structure by MAP
-fit_map <- update(prior, method = "MAP")
+fit_map <- update(fit_prior, method = "MAP")
 
 }
 \seealso{

@@ -27,22 +27,14 @@ No internal slots are dumped.
 }
 \examples{
 set.seed(1)
-d <- data.frame(
-  x = rep(seq(0, 1, length.out = 6), each = 5)
-)
+d <- data.frame(x = rep(seq(0, 1, length.out = 6), each = 5))
 d$y <- rnorm(nrow(d), mean = sin(2 * pi * d$x), sd = 0.2)
 
-fit <- slgp(
-  y ~ x,
-  data = d,
-  method = "none",
-  basisFunctionsUsed = "RFF",
-  predictorsLower = 0,
-  predictorsUpper = 1,
-  responseRange = range(d$y),
-  opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2),
-  seed = 1
-)
+fit <- slgp(y ~ x,
+  data = d, method = "MAP", basisFunctionsUsed = "RFF",
+  predictorsLower = 0, predictorsUpper = 1,
+  responseRange = range(d$y), seed = 1,
+  opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2))
 
 fit
 

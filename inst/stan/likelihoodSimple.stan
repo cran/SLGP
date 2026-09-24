@@ -15,12 +15,11 @@ functions {
 
     for (i in 1:size(multiplicities)) {
       int start = 1 + (i - 1) * nIntegral;
-      int end = nIntegral + (i - 1) * nIntegral;
       vector[nIntegral] segmentZ = segment(Z, start, nIntegral);
 
       real maxVal = max(segmentZ);
-      segmentZ = exp(segmentZ - maxVal);
-      integralValue[i] = maxVal + log(dot_product(segmentZ, weightQuadrature));
+      integralValue[i] = maxVal
+                         + log(dot_product(exp(segmentZ - maxVal), weightQuadrature));
     }
 
     return fx1 - dot_product(integralValue, multiplicities);
@@ -32,14 +31,17 @@ data {
   int<lower=1> n;
   int<lower=1> nIntegral;
   int<lower=1> nPredictors;
-  int<lower=1> p; 										// assuming the length of epsilon
+  int<lower=1> p; 						// assuming the length of epsilon
   vector[p] meanFvalues;
   matrix[nIntegral*nPredictors, p] functionValues;
   vector[nIntegral] weightQuadrature;
   vector[nPredictors] multiplicities;
-  matrix[p, p] Sigma;      								// Covariance matrix
-  vector[p] mean_x;           							// Vector of mean value of the prior
+  real<lower=0> sigma2;						// prior variance of epsilon
   vector[nIntegral*nPredictors] trendValues;
+}
+
+transformed data {
+  real<lower=0> priorSd = sqrt(sigma2);
 }
 
 parameters {
@@ -47,8 +49,9 @@ parameters {
 }
 
 model {
-  // Priors:
-  epsilon ~ multi_normal(mean_x, Sigma);
+  // Prior: always N(0, sigma2 I), so a scalar normal replaces the multivariate
+  // one and avoids a p x p Cholesky decomposition at every leapfrog step.
+  epsilon ~ normal(0, priorSd);
   // Likelihood:
   target += custom_simple_lpdf(epsilon | n, nIntegral, nPredictors, meanFvalues, functionValues, weightQuadrature, multiplicities, trendValues);
 }

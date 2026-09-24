@@ -35,7 +35,11 @@
 #' @param opts Optional list of extra settings passed to inference routines (e.g., \code{stan_iter}, \code{stan_chains}, \code{ndraws}).
 #' @param trend Optional function returning the trend of the transformed GP.
 #'   If not provided, a zero trend is used.
-#' @param discrete Logical; whether the response is treated as discrete, defaults as \code{FALSE}.
+#' @param discrete Logical; whether the response is treated as discrete,d efaults to \code{FALSE}.
+#' When \code{TRUE}, the \code{nIntegral} quadrature nodes are taken to be the support of
+#' the response and the normalising integral becomes an exact finite sum.
+#' Both \code{discrete} and \code{nIntegral} are recorded on the fitted object and
+#' reused as defaults by \code{\link[stats]{predict}}, \code{\link[stats]{simulate}}, \code{\link[graphics]{plot}} and \code{\link[stats]{update}}.
 #' @param verbose Logical; if \code{TRUE}, print progress and diagnostic messages during computation.
 #'   Defaults to \code{FALSE}.
 #'
@@ -60,7 +64,7 @@
 #' fit <- slgp(
 #'   y ~ x,
 #'   data = d,
-#'   method = "none",
+#'   method = "Prior",
 #'   basisFunctionsUsed = "RFF",
 #'   predictorsLower = 0,
 #'   predictorsUpper = 1,
@@ -113,7 +117,7 @@ slgp <- function(formula,
     stop("Not all predictor variables in the formula are present in the data.")
   }
   #Match arguments
-  method <- match.arg(method, c("none", "MCMC", "MAP", "Laplace"))
+  method <- match.arg(method, c("none", "Prior", "MCMC", "MAP", "Laplace"))
   basisFunctionsUsed <- match.arg(
     basisFunctionsUsed,
     c("inducing points", "RFF", "Discrete FF", "filling FF", "custom cosines")
@@ -139,6 +143,7 @@ slgp <- function(formula,
     responseRange[1]<- min(responseRange[1], min(data[, responseName]))
     responseRange[2]<- max(responseRange[2], max(data[, responseName]))
   }
+  .t_setup <- proc.time()
   normalizedData <- normalize_data(data=data, predictorNames = predictorNames, responseName = responseName,
                                    predictorsUpper = predictorsUpper, predictorsLower = predictorsLower,
                                    responseRange = responseRange)
@@ -208,18 +213,16 @@ slgp <- function(formula,
       eps <- rnorm(ncol(functionValues))
       return(diff(range(functionValues%*%eps)))
     })
-    sigma2 <- median(5/resSim)
+    sigma2 <- median(5/resSim)^2
   }
 
-  if(!(discrete)){
-    weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
+
+  if(discrete){
+    weightQuadrature <- rep(1, nIntegral)
   }else{
-    if(discrete){
-      weightQuadrature <- rep(1, nIntegral)
-    }else{
-      weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
-    }
+    weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
   }
+
 
   # Create the data list required for the estimation method selected
   if(interpolateBasisFun == "WNN"){
@@ -228,51 +231,58 @@ slgp <- function(formula,
     temp[is.na(temp)]<- 1
     temp2 <- intermediateQuantities$weightSamplesToNodes
     temp2[is.na(temp2)]<- 0
-    stan_data <- list(
-      n = nrow(intermediateQuantities$indSamplesToNodes),
-      nIntegral = nIntegral,
-      nPredictors = nrow(intermediateQuantities$nodes)/nIntegral,
-      nNeigh = ncol(intermediateQuantities$indSamplesToNodes),
-      p = ncol(functionValues),
-      functionValues = functionValues,
-      weightMatrix = temp2,
-      indMatrix =temp,
-      weightQuadrature = weightQuadrature,
-      Sigma = diag(sigma2, ncol(functionValues)),
-      mean_x = rep(0, ncol(functionValues)),
-      trendValues = trendValues
-    )
+
+    if(!(method %in% c("none", "Prior"))){
+      stan_data <- list(
+        n = nrow(intermediateQuantities$indSamplesToNodes),
+        nIntegral = nIntegral,
+        nPredictors = nrow(intermediateQuantities$nodes)/nIntegral,
+        nNeigh = ncol(intermediateQuantities$indSamplesToNodes),
+        p = ncol(functionValues),
+        functionValues = functionValues,
+        weightMatrix = temp2,
+        indMatrix =temp,
+        weightQuadrature = weightQuadrature,
+        Sigma = diag(sigma2, ncol(functionValues)),
+        mean_x = rep(0, ncol(functionValues)),
+        trendValues = trendValues)
+    }
+    else{stan_data <- list() }
   }else{
     stan_model <- stanmodels$likelihoodSimple
     if(interpolateBasisFun=="nothing"){
-      stan_data <- list(
-        n = nrow(intermediateQuantities$indSamplesToNodes),
-        nIntegral = nIntegral,
-        nPredictors = as.integer(max(intermediateQuantities$indNodesToIntegral, na.rm = TRUE)),
-        p = ncol(functionValues),
-        meanFvalues = colMeans(functionValues[intermediateQuantities$indSamplesToNodes,]),
-        functionValues = functionValues[!is.na(intermediateQuantities$indNodesToIntegral),],
-        multiplicities=c(as.matrix(table(intermediateQuantities$indSamplesToPredictor))[, 1]),
-        weightQuadrature = weightQuadrature,
-        Sigma = diag(sigma2, ncol(functionValues)),
-        mean_x = rep(0, ncol(functionValues)),
-        trendValues = trendValues
-      )
+      if(!(method %in% c("none", "Prior"))){
+        stan_data <- list(
+          n = nrow(intermediateQuantities$indSamplesToNodes),
+          nIntegral = nIntegral,
+          nPredictors = as.integer(max(intermediateQuantities$indNodesToIntegral, na.rm = TRUE)),
+          p = ncol(functionValues),
+          meanFvalues = colMeans(functionValues[intermediateQuantities$indSamplesToNodes,]),
+          functionValues = functionValues[!is.na(intermediateQuantities$indNodesToIntegral),],
+          multiplicities=c(as.matrix(table(intermediateQuantities$indSamplesToPredictor))[, 1]),
+          weightQuadrature = weightQuadrature,
+          Sigma = diag(sigma2, ncol(functionValues)),
+          mean_x = rep(0, ncol(functionValues)),
+          trendValues = trendValues[!is.na(intermediateQuantities$indNodesToIntegral)])
+      }
+      else{stan_data <- list() }
     }
     if(interpolateBasisFun =="NN"){
-      stan_data <- list(
-        n = nrow(intermediateQuantities$indSamplesToNodes),
-        nIntegral = nIntegral,
-        nPredictors = as.integer(max(intermediateQuantities$indNodesToIntegral, na.rm = TRUE)),
-        p = ncol(functionValues),
-        meanFvalues = colMeans(functionValues[intermediateQuantities$indSamplesToNodes,]),
-        functionValues = functionValues[!is.na(intermediateQuantities$indNodesToIntegral),],
-        weightQuadrature = weightQuadrature,
-        multiplicities=c(as.matrix(table(intermediateQuantities$indNodesToIntegral[intermediateQuantities$indSamplesToNodes]))[, 1]),
-        Sigma = diag(sigma2, ncol(functionValues)),
-        mean_x = rep(0, ncol(functionValues)),
-        trendValues = trendValues
-      )
+      if(!(method %in% c("none", "Prior"))){
+        stan_data <- list(
+          n = nrow(intermediateQuantities$indSamplesToNodes),
+          nIntegral = nIntegral,
+          nPredictors = as.integer(max(intermediateQuantities$indNodesToIntegral, na.rm = TRUE)),
+          p = ncol(functionValues),
+          meanFvalues = colMeans(functionValues[intermediateQuantities$indSamplesToNodes,]),
+          functionValues = functionValues[!is.na(intermediateQuantities$indNodesToIntegral),],
+          weightQuadrature = weightQuadrature,
+          multiplicities=c(as.matrix(table(intermediateQuantities$indNodesToIntegral[intermediateQuantities$indSamplesToNodes]))[, 1]),
+          Sigma = diag(sigma2, ncol(functionValues)),
+          mean_x = rep(0, ncol(functionValues)),
+          trendValues = trendValues[!is.na(intermediateQuantities$indNodesToIntegral)])
+      }
+      else{stan_data <- list() }
     }
   }
 
@@ -281,6 +291,8 @@ slgp <- function(formula,
     epsilonStart <- rnorm(ncol(functionValues))
   }
 
+  .setup_time <- proc.time() - .t_setup
+  .t_est <- proc.time()
   # Estimation
   if(method=="MCMC"){
     stan_chains <- opts$stan_chains
@@ -294,7 +306,9 @@ slgp <- function(formula,
     fit <- rstan::sampling(stan_model,
                            data = stan_data,
                            iter = stan_iter,
-                           chains = stan_chains)
+                           chains = stan_chains,
+                           init = rep(list(list(epsilon = epsilonStart)),
+                                      stan_chains))
     epsilon <-  rstan::extract(fit)$epsilon
     fit_summary <- rstan::summary(fit)
     rhats <- fit_summary$summary[,"Rhat"]
@@ -311,35 +325,52 @@ slgp <- function(formula,
                  round(max(ess[-c(length(ess))]), 1)))
       cat(paste0("  * Checking the Bayesian Fraction of Missing Information is also a way to locate issues.\n"))
     }
-    rstan::check_energy(fit)
-    logPost <- NaN # To implement later
+    if(verbose){ rstan::check_energy(fit) }
+    diagnostics <- .slgp_mcmc_diag(fit)
+    logPost <- diagnostics$lp_mean
   }
   if(method=="Laplace"){
+    ## The Hessian is available in closed form, so we do not ask Stan to
+    ## build it by finite differences: that would cost O(p) extra gradient
+    ## evaluations after convergence and dominates the fit for large p.
     fit <- rstan::optimizing(
       object = stan_model,
       data = stan_data,
-      hessian = TRUE  # Set to TRUE if you want to estimate the Hessian (optional)
+      init = list(epsilon = epsilonStart),
+      hessian = FALSE
     )
+    if (is.null(fit$par))
+      stop("Stan failed to optimise the posterior; see the message above.")
     # The MAP estimates
     mode <- fit$par
-    hessian <- -fit$hessian
+    hessian <- .slgp_hessian(stan_data, as.vector(mode),
+                             interpolateBasisFun, sigma2)
     ndraws <- opts$ndraws
     if(is.null(ndraws)){
       ndraws <- 1000
     }
+    nugget <- 0
     sigma <- try(solve(hessian), silent = TRUE)
     if(is.character(sigma)){
       nugget <-1e-10
       while(is.character(sigma)){
-        sigma <- try(solve(hessian+nugget*diag(nrow(hessian))))
+        sigma <- try(solve(hessian+nugget*diag(nrow(hessian))), silent = TRUE)
         nugget <- 10*nugget
       }
+      warning("The Hessian at the mode was not invertible; a nugget of ",
+              format(nugget, digits = 3), " was added. The Laplace ",
+              "uncertainty should be interpreted with caution.")
     }
 
     epsilon <- mvnfast::rmvn(n = ndraws,
                              mu = mode,
                              sigma = sigma,
                              ncores=2)
+    ## Gaussian log-density of each draw: kept so that summary() can measure
+    ## how well the approximation matches the true posterior.
+    logq <- mvnfast::dmvn(epsilon, mu = mode, sigma = sigma, log = TRUE)
+    diagnostics <- .slgp_laplace_diag(hessian = hessian, nugget = nugget,
+                                      logq = logq, ndraws = ndraws)
 
     logPost <- c(fit$value)
   }
@@ -347,13 +378,17 @@ slgp <- function(formula,
     fit <- rstan::optimizing(
       object = stan_model,
       data = stan_data,
+      init = list(epsilon = epsilonStart),
       hessian = FALSE,
       iter = 5000,
       tol_grad = 1e-12,
       tol_param = 1e-12,
       tol_obj = 1e-14)
+    if (is.null(fit$par))
+      stop("Stan failed to optimise the posterior; see the message above.")
     # The MAP estimates
     epsilon <- matrix(fit$par, nrow=1)
+    diagnostics <- .slgp_map_diag(fit)
     # The log-posterior value
     logPost <- c(fit$value)
   }
@@ -361,6 +396,18 @@ slgp <- function(formula,
     epsilon <- matrix(nrow=0, ncol=ncol(functionValues))
     logPost <- NaN
   }
+  if (method == "Prior") {
+    ndraws <- opts$ndraws
+    if (is.null(ndraws)) ndraws <- 1000
+    epsilon <- matrix(rnorm(ndraws * ncol(functionValues), sd = sqrt(sigma2)),
+                      nrow = ndraws, ncol = ncol(functionValues))
+    logPost <- NaN
+  }
+  if(!exists("diagnostics", inherits = FALSE)){ diagnostics <- list(scheme = method) }
+  .est_time <- proc.time() - .t_est
+  diagnostics$timing <- .slgp_timing(.setup_time, .est_time,
+                                     if (exists("fit", inherits = FALSE)) fit else NULL,
+                                     method)
   gc()
   return(SLGP(formula = formula,
               data = data,
@@ -376,6 +423,9 @@ slgp <- function(formula,
               BasisFunParam=initBasisFun,
               coefficients = epsilon,
               hyperparams=list(sigma2=sigma2, lengthscale=lengthscale),
+              discrete = discrete,
+              nIntegral = nIntegral,
+              diagnostics=diagnostics,
               logPost=logPost))
 }
 
@@ -394,7 +444,7 @@ slgp <- function(formula,
 #' @param newdata Optional data frame containing new observations. If \code{NULL}, the original data is reused.
 #' @param epsilonStart Optional numeric vector with initial values for the coefficients \eqn{\epsilon}.
 #' @param method Character string specifying the training method: one of
-#'   \code{"none"}, \code{"MCMC"}, \code{"MAP"}, or \code{"Laplace"}.
+#'   \code{"none"}, \code{"Prior"}, \code{"MCMC"}, \code{"MAP"}, or \code{"Laplace"}.
 #' @param interpolateBasisFun Character string specifying how basis functions are evaluated:
 #'   \itemize{
 #'     \item \code{"nothing"} — evaluate directly at sample locations;
@@ -415,7 +465,10 @@ slgp <- function(formula,
 #'   \code{stan_chains}, \code{stan_iter}, \code{ndraws}, etc.
 #' @param trend Optional function returning the trend of the transformed GP.
 #'   If not provided, a zero trend is used.
-#' @param discrete Logical; whether the response is treated as discrete, defaults as \code{FALSE}.
+#' @param discrete Logical; whether the response is treated as discrete.
+#' If \code{NULL} (default), the value recorded in \code{SLGPmodel} is reused,
+#' so that refitting a discrete model does not silently turn it into a continuousone.
+#' Supply \code{TRUE} or \code{FALSE} to override.
 #' @param verbose Logical; if \code{TRUE}, print progress and diagnostic messages during computation.
 #'   Defaults to \code{FALSE}.
 #'
@@ -431,14 +484,14 @@ retrainSLGP <- function(SLGPmodel,
                         epsilonStart =NULL,
                         method,
                         interpolateBasisFun="WNN",
-                        nIntegral=101,
+                        nIntegral=NULL,
                         nDiscret=101,
                         hyperparams = NULL,
                         sigmaEstimationMethod = "none",
                         seed=NULL,
                         opts = list(),
                         trend=NULL,
-                        discrete=FALSE,
+                        discrete = NULL,
                         verbose = FALSE) {
   .Deprecated(msg = paste("retrainSLGP() is deprecated;",
                           "use update(object, ...)."))
@@ -465,14 +518,14 @@ retrainSLGP <- function(SLGPmodel,
                           epsilonStart =NULL,
                           method,
                           interpolateBasisFun="WNN",
-                          nIntegral=101,
                           nDiscret=101,
+                          nIntegral = NULL,
                           hyperparams = NULL,
                           sigmaEstimationMethod = "none",
                           seed=NULL,
                           opts = list(),
-                          trend=NULL,
-                          discrete=FALSE,
+                          trend = NULL,
+                          discrete=NULL,
                           verbose = FALSE) {
   if(!is.null(seed)){
     set.seed(seed)
@@ -481,13 +534,23 @@ retrainSLGP <- function(SLGPmodel,
   predictorNames <- SLGPmodel@covariateName
   predictorsUpper<- SLGPmodel@predictorsRange$upper
   predictorsLower<-SLGPmodel@predictorsRange$lower
-
+  method <- match.arg(method, c("none", "Prior", "MCMC", "MAP", "Laplace"))
+  if(is.null(discrete)){
+    discrete <- .slgp_discrete(SLGPmodel)
+  }
+  if(is.null(nIntegral)){
+    nIntegral <- .slgp_nIntegral(SLGPmodel)
+  }
+  if(isTRUE(discrete) && nIntegral != .slgp_nIntegral(SLGPmodel)){
+    warning("'nIntegral' (", nIntegral, ") differs from the value used at ",
+            "fitting (", .slgp_nIntegral(SLGPmodel), "); the discrete support ",
+            "grid will change.")
+  }
   responseRange <-SLGPmodel@responseRange
-
   if(!is.null(newdata)){
     SLGPmodel@data <- newdata
   }
-
+  .t_setup <- proc.time()
   normalizedData <- normalize_data(data=SLGPmodel@data,
                                    predictorNames = predictorNames,
                                    responseName = responseName,
@@ -537,7 +600,7 @@ retrainSLGP <- function(SLGPmodel,
       eps <- rnorm(ncol(functionValues))
       return(diff(range(functionValues%*%eps)))
     })
-    sigma2 <- median(5/resSim)
+    sigma2 <- median(5/resSim)^2
   }
   if(is.null(trend)){
     trend <- SLGPmodel@trend
@@ -554,14 +617,11 @@ retrainSLGP <- function(SLGPmodel,
     trendValues <- trend(df=dftrend)
     rm(dftrend)
   }
-  if(!discrete){
-    weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
+
+  if(discrete){
+    weightQuadrature <- rep(1, nIntegral)
   }else{
-    if(discrete){
-      weightQuadrature <- rep(1, nIntegral)
-    }else{
-      weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
-    }
+    weightQuadrature <- c(1/nIntegral/2, rep(1/(nIntegral-1), nIntegral-2), 1/nIntegral/2)
   }
 
   # Create the data list required for the estimation method selected
@@ -572,61 +632,73 @@ retrainSLGP <- function(SLGPmodel,
     temp[is.na(temp)]<- 1
     temp2 <- intermediateQuantities$weightSamplesToNodes
     temp2[is.na(temp2)]<- 0
-    stan_data <- list(
-      n = nrow(intermediateQuantities$indSamplesToNodes),
-      nIntegral = nIntegral,
-      nPredictors = nrow(intermediateQuantities$nodes)/nIntegral,
-      nNeigh = ncol(intermediateQuantities$indSamplesToNodes),
-      p = ncol(functionValues),
-      functionValues = functionValues,
-      weightMatrix = temp2,
-      indMatrix =temp,
-      weightQuadrature = weightQuadrature,
-      Sigma = diag(sigma2, ncol(functionValues)),
-      mean_x = rep(0, ncol(functionValues)),
-      trendValues = trendValues
-    )
+    if(!(method %in% c("none", "Prior"))){
+      stan_data <- list(
+        n = nrow(intermediateQuantities$indSamplesToNodes),
+        nIntegral = nIntegral,
+        nPredictors = nrow(intermediateQuantities$nodes)/nIntegral,
+        nNeigh = ncol(intermediateQuantities$indSamplesToNodes),
+        p = ncol(functionValues),
+        functionValues = functionValues,
+        weightMatrix = temp2,
+        indMatrix =temp,
+        weightQuadrature = weightQuadrature,
+        Sigma = diag(sigma2, ncol(functionValues)),
+        mean_x = rep(0, ncol(functionValues)),
+        trendValues = trendValues)
+    }
+    else{stan_data <- list() }
   }else{
     stan_model <- stanmodels$likelihoodSimple
-
     if(interpolateBasisFun=="nothing"){
-      stan_data <- list(
-        n = nrow(intermediateQuantities$indSamplesToNodes),
-        nIntegral = nIntegral,
-        nPredictors = as.integer(max(intermediateQuantities$indNodesToIntegral, na.rm = TRUE)),
-        p = ncol(functionValues),
-        meanFvalues = colMeans(functionValues[intermediateQuantities$indSamplesToNodes,]),
-        functionValues = functionValues[!is.na(intermediateQuantities$indNodesToIntegral),],
-        weightQuadrature = weightQuadrature,
-        multiplicities=c(as.matrix(table(intermediateQuantities$indSamplesToPredictor))[, 1]),
-        Sigma = diag(sigma2, ncol(functionValues)),
-        mean_x = rep(0, ncol(functionValues)),
-        trendValues = trendValues[!is.na(intermediateQuantities$indNodesToIntegral)]
-      )
+      if(!(method %in% c("none", "Prior"))){
+        stan_data <- list(
+          n = nrow(intermediateQuantities$indSamplesToNodes),
+          nIntegral = nIntegral,
+          nPredictors = as.integer(max(intermediateQuantities$indNodesToIntegral, na.rm = TRUE)),
+          p = ncol(functionValues),
+          meanFvalues = colMeans(functionValues[intermediateQuantities$indSamplesToNodes,]),
+          functionValues = functionValues[!is.na(intermediateQuantities$indNodesToIntegral),],
+          weightQuadrature = weightQuadrature,
+          multiplicities=c(as.matrix(table(intermediateQuantities$indSamplesToPredictor))[, 1]),
+          Sigma = diag(sigma2, ncol(functionValues)),
+          mean_x = rep(0, ncol(functionValues)),
+          trendValues = trendValues[!is.na(intermediateQuantities$indNodesToIntegral)])
+      }
+      else{stan_data <- list() }
     }
     if(interpolateBasisFun =="NN"){
-      stan_data <- list(
-        n = nrow(intermediateQuantities$indSamplesToNodes),
-        nIntegral = nIntegral,
-        nPredictors = as.integer(max(intermediateQuantities$indNodesToIntegral, na.rm = TRUE)),
-        p = ncol(functionValues),
-        meanFvalues = colMeans(functionValues[intermediateQuantities$indSamplesToNodes,]),
-        functionValues = functionValues[!is.na(intermediateQuantities$indNodesToIntegral),],
-        weightQuadrature = weightQuadrature,
-        multiplicities=c(as.matrix(table(intermediateQuantities$indNodesToIntegral[intermediateQuantities$indSamplesToNodes]))[, 1]),
-        Sigma = diag(sigma2, ncol(functionValues)),
-        mean_x = rep(0, ncol(functionValues)),
-        trendValues = trendValues[!is.na(intermediateQuantities$indNodesToIntegral)]
-      )
+      if(!(method %in% c("none", "Prior"))){
+        stan_data <- list(
+          n = nrow(intermediateQuantities$indSamplesToNodes),
+          nIntegral = nIntegral,
+          nPredictors = as.integer(max(intermediateQuantities$indNodesToIntegral, na.rm = TRUE)),
+          p = ncol(functionValues),
+          meanFvalues = colMeans(functionValues[intermediateQuantities$indSamplesToNodes,]),
+          functionValues = functionValues[!is.na(intermediateQuantities$indNodesToIntegral),],
+          weightQuadrature = weightQuadrature,
+          multiplicities=c(as.matrix(table(intermediateQuantities$indNodesToIntegral[intermediateQuantities$indSamplesToNodes]))[, 1]),
+          Sigma = diag(sigma2, ncol(functionValues)),
+          mean_x = rep(0, ncol(functionValues)),
+          trendValues = trendValues[!is.na(intermediateQuantities$indNodesToIntegral)])
+      }
+      else{stan_data <- list() }
     }
   }
 
-
   # Call the right estimation method
+  ## A refit starts from the coefficients already in the model when there is
+  ## a single set of them (a MAP fit), which is what makes 'MAP as a starting
+  ## point for MCMC' actually true.
+  if(is.null(epsilonStart) && nrow(SLGPmodel@coefficients) == 1L){
+    epsilonStart <- as.vector(SLGPmodel@coefficients)
+  }
   if(is.null(epsilonStart)){
     epsilonStart <- rnorm(ncol(functionValues))
   }
 
+  .setup_time <- proc.time() - .t_setup
+  .t_est <- proc.time()
   # Estimation
   if(method=="MCMC"){
     stan_chains <- opts$stan_chains
@@ -640,7 +712,9 @@ retrainSLGP <- function(SLGPmodel,
     fit <- rstan::sampling(stan_model,
                            data = stan_data,
                            iter = stan_iter,
-                           chains = stan_chains)
+                           chains = stan_chains,
+                           init = rep(list(list(epsilon = epsilonStart)),
+                                      stan_chains))
     epsilon <-  rstan::extract(fit)$epsilon
     fit_summary <- rstan::summary(fit)
     rhats <- fit_summary$summary[,"Rhat"]
@@ -657,36 +731,51 @@ retrainSLGP <- function(SLGPmodel,
                  round(max(ess[-c(length(ess))]), 1)))
       cat(paste0("  * Checking the Bayesian Fraction of Missing Information is also a way to locate issues.\n"))
     }
-    rstan::check_energy(fit)
-    logPost <- NaN
+    if(verbose){ rstan::check_energy(fit) }
+    diagnostics <- .slgp_mcmc_diag(fit)
+    logPost <- diagnostics$lp_mean
   }
   if(method=="Laplace"){
+    ## The Hessian is available in closed form, so we do not ask Stan to
+    ## build it by finite differences: that would cost O(p) extra gradient
+    ## evaluations after convergence and dominates the fit for large p.
     fit <- rstan::optimizing(
       object = stan_model,
       data = stan_data,
-      hessian = TRUE  # Set to TRUE if you want to estimate the Hessian (optional)
+      init = list(epsilon = epsilonStart),
+      hessian = FALSE
     )
+    if (is.null(fit$par))
+      stop("Stan failed to optimise the posterior; see the message above.")
     # The MAP estimates
     mode <- fit$par
-    hessian <- -fit$hessian
+    hessian <- .slgp_hessian(stan_data, as.vector(mode),
+                             interpolateBasisFun, sigma2)
     ndraws <- opts$ndraws
     if(is.null(ndraws)){
       ndraws <- 1000
     }
+    nugget <- 0
     sigma <- try(solve(hessian), silent = TRUE)
     if(is.character(sigma)){
       nugget <-1e-10
       while(is.character(sigma)){
-        sigma <- try(solve(hessian+nugget*diag(nrow(hessian))))
+        sigma <- try(solve(hessian+nugget*diag(nrow(hessian))), silent = TRUE)
         nugget <- 10*nugget
       }
+      warning("The Hessian at the mode was not invertible; a nugget of ",
+              format(nugget, digits = 3), " was added. The Laplace ",
+              "uncertainty should be interpreted with caution.")
     }
-
     epsilon <- mvnfast::rmvn(n = ndraws,
                              mu = mode,
                              sigma = sigma,
                              ncores=2)
-
+    ## Gaussian log-density of each draw: kept so that summary() can measure
+    ## how well the approximation matches the true posterior.
+    logq <- mvnfast::dmvn(epsilon, mu = mode, sigma = sigma, log = TRUE)
+    diagnostics <- .slgp_laplace_diag(hessian = hessian, nugget = nugget,
+                                      logq = logq, ndraws = ndraws)
     logPost <- c(fit$value)
 
   }
@@ -694,13 +783,17 @@ retrainSLGP <- function(SLGPmodel,
     fit <- rstan::optimizing(
       object = stan_model,
       data = stan_data,
+      init = list(epsilon = epsilonStart),
       hessian = FALSE,
       iter = 5000,
       tol_grad = 1e-12,
       tol_param = 1e-12,
       tol_obj = 1e-14)
+    if (is.null(fit$par))
+      stop("Stan failed to optimise the posterior; see the message above.")
     # The MAP estimates
     epsilon <- matrix(fit$par, nrow=1)
+    diagnostics <- .slgp_map_diag(fit)
     logPost <- c(fit$value)
 
   }
@@ -708,11 +801,26 @@ retrainSLGP <- function(SLGPmodel,
     epsilon <- matrix(nrow=0, ncol=ncol(functionValues))
     logPost <- NaN
   }
+  if(!exists("diagnostics", inherits = FALSE)){ diagnostics <- list(scheme = method) }
+  if (method == "Prior") {
+    ndraws <- opts$ndraws
+    if (is.null(ndraws)) ndraws <- 1000
+    epsilon <- matrix(rnorm(ndraws * ncol(functionValues), sd = sqrt(sigma2)),
+                      nrow = ndraws, ncol = ncol(functionValues))
+    logPost <- NaN
+  }
+  .est_time <- proc.time() - .t_est
+  diagnostics$timing <- .slgp_timing(.setup_time, .est_time,
+                                     if (exists("fit", inherits = FALSE)) fit else NULL,
+                                     method)
   gc()
   SLGPmodel@coefficients <- epsilon
   SLGPmodel@hyperparams <- list(sigma2=sigma2, lengthscale=lengthscale)
   SLGPmodel@method <- method
   SLGPmodel@logPost <- logPost
+  SLGPmodel@diagnostics <- diagnostics
   SLGPmodel@trend <- trend
+  SLGPmodel@discrete <- discrete
+  SLGPmodel@nIntegral <- nIntegral
   return(SLGPmodel)
 }

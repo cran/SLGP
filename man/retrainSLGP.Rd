@@ -10,14 +10,14 @@ retrainSLGP(
   epsilonStart = NULL,
   method,
   interpolateBasisFun = "WNN",
-  nIntegral = 101,
+  nIntegral = NULL,
   nDiscret = 101,
   hyperparams = NULL,
   sigmaEstimationMethod = "none",
   seed = NULL,
   opts = list(),
   trend = NULL,
-  discrete = FALSE,
+  discrete = NULL,
   verbose = FALSE
 )
 }
@@ -29,7 +29,7 @@ retrainSLGP(
 \item{epsilonStart}{Optional numeric vector with initial values for the coefficients \eqn{\epsilon}.}
 
 \item{method}{Character string specifying the training method: one of
-\code{"none"}, \code{"MCMC"}, \code{"MAP"}, or \code{"Laplace"}.}
+\code{"none"}, \code{"Prior"}, \code{"MCMC"}, \code{"MAP"}, or \code{"Laplace"}.}
 
 \item{interpolateBasisFun}{Character string specifying how basis functions are evaluated:
 \itemize{
@@ -59,7 +59,10 @@ either \code{"none"} (default) or \code{"heuristic"}.}
 \item{trend}{Optional function returning the trend of the transformed GP.
 If not provided, a zero trend is used.}
 
-\item{discrete}{Logical; whether the response is treated as discrete, defaults as \code{FALSE}.}
+\item{discrete}{Logical; whether the response is treated as discrete.
+If \code{NULL} (default), the value recorded in \code{SLGPmodel} is reused,
+so that refitting a discrete model does not silently turn it into a continuousone.
+Supply \code{TRUE} or \code{FALSE} to override.}
 
 \item{verbose}{Logical; if \code{TRUE}, print progress and diagnostic messages during computation.
 Defaults to \code{FALSE}.}

@@ -4,10 +4,20 @@
 \alias{summary,SLGP-method}
 \title{Summarise a fitted SLGP model}
 \usage{
-\S4method{summary}{SLGP}(object, ...)
+\S4method{summary}{SLGP}(object, diagnostics = FALSE, newdata = NULL, ...)
 }
 \arguments{
 \item{object}{An object of class \code{\link{SLGP-class}}.}
+
+\item{diagnostics}{Logical; if \code{TRUE}, compute the predictive
+diagnostics described above. Default \code{FALSE}, since the cost grows
+with the number of observations and of coefficient draws.}
+
+\item{newdata}{Optional \code{data.frame} of held-out observations on which
+to compute the predictive diagnostics. If \code{NULL} (default), the
+training data are used, in which case the log predictive density and the
+PIT are in-sample and therefore optimistic; WAIC and PSIS-LOO correct for
+this, the raw log predictive density does not.}
 
 \item{...}{Ignored.}
 }
@@ -15,8 +25,23 @@
 An object of class \code{"summary.SLGP"} (a list), returned invisibly.
 }
 \description{
-Extends \code{\link{print}} with fit diagnostics where available: the
-log-posterior at the mode (MAP / Laplace), the number of coefficient draws,
-and basic structural information. The returned object has class
-\code{"summary.SLGP"} and its own print method.
+Extends \code{\link{print}} with diagnostics. Two kinds are reported.
+}
+\details{
+\emph{Sampler diagnostics} describe how well the estimation scheme  worked.
+This is the by-products of fitting, stored in the model, and always shown:
+R-hat, effective sample sizes, divergent transitions and BFMI for
+\code{"MCMC"}; the nugget added to the Hessian and its conditioning for
+\code{"Laplace"}; the optimiser return code for \code{"MAP"}.
+
+\emph{Predictive diagnostics} describe how well the fitted field describes
+data: the mean log predictive density per observation, and the probability integral
+transform (PIT) of the observations with a Kolmogorov-Smirnov statistic
+against the uniform. These require evaluating the model at every observation
+and are therefore computed only when \code{diagnostics = TRUE}.
+
+For a Laplace fit, the importance-sampling effective sample size of the
+Gaussian draws relative to the true posterior is also reported: it says how
+many of the stored draws are worth, in effective terms, once reweighted, and
+hence reflects whether the Gaussian approximation is adequate.
 }

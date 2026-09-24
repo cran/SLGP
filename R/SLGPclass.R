@@ -29,27 +29,43 @@
 #'   - \code{sigma}: numeric signal standard deviation;
 #'   - \code{lengthscale}: a vector of lengthscales for each input dimension.
 #' @slot trend A \code{function} that returns the trend of the transformed GP (not to be estimated).
+#' @slot discrete A \code{logical} indicating whether the response is treated as
+#'   discrete, i.e. supported on the \code{nIntegral} nodes spanning
+#'   \code{responseRange}, in which case the normalising integral is an exact
+#'   finite sum rather than a quadrature approximation.
+#' @slot nIntegral An \code{integer} giving the number of quadrature nodes used
+#'   at fitting. For a discrete response this is the size of the support.
+#' @slot diagnostics A \code{list} of fit diagnostics produced by the
+#'   estimation scheme: convergence summaries (R-hat, effective sample sizes,
+#'   divergent transitions) for \code{"MCMC"}, the nugget and conditioning of
+#'   the Hessian for \code{"Laplace"}, and the optimiser return code for
+#'   \code{"MAP"}. It also contains a \code{timing} element giving the
+#'   wall-clock cost of the fit, split into \code{setup} (normalisation,
+#'   quadrature pre-computation, basis evaluation) and \code{estimation}.
+#'   See \code{\link[base]{summary}}.
 #' @slot logPost A \code{numeric} value representing the (unnormalized) log-posterior of the model.
 #'   Currently available only for MAP and Laplace-trained models.
 #'
 #' @export
 SLGP <- setClass(
   "SLGP",
-  slots = c(
-    formula = "formula",
-    data = "data.frame",
-    responseName = "character",
-    covariateName = "character",
-    responseRange = "numeric",
-    predictorsRange = "list",
-    trend = "function",
-    method = "character",
-    p = "numeric",
-    basisFunctionsUsed = "character",
-    opts_BasisFun = "list",
-    BasisFunParam = "list",
-    coefficients = "matrix",
-    hyperparams = "list",
-    logPost = "numeric"
-  )
-)
+  slots = c(formula = "formula",
+            data = "data.frame",
+            responseName = "character",
+            covariateName = "character",
+            responseRange = "numeric",
+            predictorsRange = "list",
+            trend = "function",
+            method = "character",
+            p = "numeric",
+            basisFunctionsUsed = "character",
+            opts_BasisFun = "list",
+            BasisFunParam = "list",
+            coefficients = "matrix",
+            hyperparams = "list",
+            discrete = "logical",
+            nIntegral = "numeric",
+            diagnostics = "list",
+            logPost = "numeric"),
+  prototype = prototype(discrete = FALSE, nIntegral = 101,
+                        diagnostics = list()))

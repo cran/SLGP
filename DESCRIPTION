@@ -1,7 +1,7 @@
 Package: SLGP
 Type: Package
 Title: Spatial Logistic Gaussian Process for Field Density Estimation
-Version: 1.1.1
+Version: 2.0.0
 Authors@R: 
     c(person(given = "Athénaïs",
              family = "Gautier",
@@ -27,17 +27,16 @@ License: GPL (>= 3)
 Encoding: UTF-8
 RoxygenNote: 7.3.2
 Biarch: true
-Depends: R (>= 3.5.0), stats
-Imports: DiceDesign, methods, mvnfast, Rcpp (>= 0.12.0), RcppParallel
-        (>= 5.0.1), rstan (>= 2.18.1), GoFKernel, rstantools
+Depends: R (>= 3.5.0)
+Imports: stats, DiceDesign, methods, mvnfast, Rcpp (>= 0.12.0),
+        RcppParallel (>= 5.0.1), rstan (>= 2.18.1), rstantools
 LinkingTo: BH (>= 1.66.0), Rcpp (>= 0.12.0), RcppEigen (>= 0.3.3.3.0),
         rstan (>= 2.18.1), StanHeaders (>= 2.21.0)
 SystemRequirements: GNU make
-Suggests: knitr, rmarkdown, tidyr, dplyr, ggplot2, ggpubr, viridis,
-        MASS
+Suggests: knitr, rmarkdown, tidyr, dplyr, ggplot2, ggpubr, viridis
 VignetteBuilder: knitr
 NeedsCompilation: yes
-Packaged: 2026-09-07 17:44:43 UTC; agautier
+Packaged: 2026-09-24 12:36:57 UTC; agautier
 Author: Athénaïs Gautier [aut, cre]
 Repository: CRAN
-Date/Publication: 2026-09-07 18:20:02 UTC
+Date/Publication: 2026-09-24 14:00:08 UTC

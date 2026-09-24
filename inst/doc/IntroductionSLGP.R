@@ -74,14 +74,10 @@ modelMAP <- slgp(depth~long, # Use a formula to specify predictors VS response
                  opts_BasisFun = list(nFreq=200,
                                       MatParam=5/2),
                  seed=1)
+summary(modelMAP)
 
 ## ----SLGPplottingPrior1, fig.cap = "Conditional depth densities across longitude under the MAP estimate of the SLGP.", fig.fullwidth=TRUE, fig.height=5, fig.width=10, fig.align='center', fig.pos="H"----
-plot( modelMAP,
-      newdata = data.frame(long = seq(range_x[1], range_x[2], length.out = 6)),
-      draw = "mean",
-      panels = TRUE,
-      n_response = 101,
-      discrete = FALSE)
+plot(modelMAP, panels = TRUE)
 
 ## ----SLGPplotting2, fig.cap = "Predictive probability density of 'depth' at 'long', seen over slices.", fig.fullwidth=TRUE, fig.height=5, fig.width=10, fig.align='center',fig.pos="H"----
 library(viridis)
@@ -162,9 +158,8 @@ ggplot(mapping=aes(x = depth)) +
                   ylim=c(0, 0.02))
 
 ## ----SLGPfitting2-------------------------------------------------------------
-modelLaplace <- update(modelMAP, 
-                       newdata = df, 
-                       method="Laplace")
+modelLaplace <- update(modelMAP, newdata = df, method="Laplace")
+summary(modelLaplace)
 
 ## ----SLGPfitting22, eval=FALSE------------------------------------------------
 #  # Or equivalent, more explicit in the re-using of the elements
@@ -184,12 +179,7 @@ modelLaplace <- update(modelMAP,
 #                       seed=1)
 
 ## ----SLGPLaplaceplo0, fig.cap = "Predictive probability density of 'depth' at 'long', as predicted by a SLGP with Laplace approximation", fig.fullwidth=TRUE, fig.height=5, fig.width=10, fig.align='center', fig.pos="H"----
-plot( modelLaplace,
-      newdata = data.frame(long = seq(range_x[1], range_x[2], length.out = 6)),
-      draw = c("mean", 1:10),
-      panels = TRUE,
-      n_response = 101,
-      discrete = FALSE)
+plot( modelLaplace, draw = c("mean", 1:10), panels = TRUE)
 
 ## ----SLGPLaplaceplot, fig.cap = "Predictive probability density (and draws from a Laplace approximation) of 'depth' at 'long', seen over 3 slices.", fig.fullwidth=TRUE, fig.height=4, fig.width=8, fig.align='center',fig.pos="H"----
 
@@ -269,7 +259,8 @@ ggplot(mapping=aes(x = depth)) +
 ## ----SLGPfitting3b, eval=FALSE------------------------------------------------
 #  modelMCMC <- update(modelMAP,
 #                      newdata = df,
-#                      method="MCMC")
+#                      method="MCMC", opts=list(stan_iter=100, stan_chains=2))
+#  summary(modelMCMC)
 
 ## ----SLGPMCMCplotMoments, fig.cap = "Simultaneous prediction of the fields moments (and associated uncertainty) using a SLGP model", fig.fullwidth=TRUE, fig.height=4, fig.width=10, fig.align='center',fig.pos="H"----
 dfX <- data.frame(long=seq(range_x[1], range_x[2], 1))

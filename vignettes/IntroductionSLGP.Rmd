@@ -109,17 +109,13 @@ modelMAP <- slgp(depth~long, # Use a formula to specify predictors VS response
                  opts_BasisFun = list(nFreq=200,
                                       MatParam=5/2),
                  seed=1)
+summary(modelMAP)
 ```
 
 We can represent the conditional densities. We first use the standard `plot()` method for `SLGP` objects.
 
 ```{r SLGPplottingPrior1, fig.cap = "Conditional depth densities across longitude under the MAP estimate of the SLGP.", fig.fullwidth=TRUE, fig.height=5, fig.width=10, fig.align='center', fig.pos="H"}
-plot( modelMAP,
-      newdata = data.frame(long = seq(range_x[1], range_x[2], length.out = 6)),
-      draw = "mean",
-      panels = TRUE,
-      n_response = 101,
-      discrete = FALSE)
+plot(modelMAP, panels = TRUE)
 ```
 
 We can also use the `predict()` method for `SLGP` objects and make more advanced visuals.
@@ -221,9 +217,8 @@ We can train a SLGP from scratch using the argument 'method="Laplace"', or re-tr
 
 
 ```{r SLGPfitting2}
-modelLaplace <- update(modelMAP, 
-                       newdata = df, 
-                       method="Laplace")
+modelLaplace <- update(modelMAP, newdata = df, method="Laplace")
+summary(modelLaplace)
 ```
 
 ```{r SLGPfitting22, eval=FALSE}
@@ -249,12 +244,7 @@ Unlike MAP estimation, which provides only a point estimate, the Laplace approxi
 
 
 ```{r SLGPLaplaceplo0, fig.cap = "Predictive probability density of 'depth' at 'long', as predicted by a SLGP with Laplace approximation", fig.fullwidth=TRUE, fig.height=5, fig.width=10, fig.align='center', fig.pos="H"}
-plot( modelLaplace,
-      newdata = data.frame(long = seq(range_x[1], range_x[2], length.out = 6)),
-      draw = c("mean", 1:10),
-      panels = TRUE,
-      n_response = 101,
-      discrete = FALSE)
+plot( modelLaplace, draw = c("mean", 1:10), panels = TRUE)
 ```
 
 
@@ -346,7 +336,8 @@ modelMCMC <- slgp(medv~age, # Use a formula to specify predictors VS response
 ```{r SLGPfitting3b, eval=FALSE}
 modelMCMC <- update(modelMAP, 
                     newdata = df, 
-                    method="MCMC")
+                    method="MCMC", opts=list(stan_iter=100, stan_chains=2))
+summary(modelMCMC)
 ```
 
 # By-products of the estimation

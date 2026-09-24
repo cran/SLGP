@@ -74,7 +74,11 @@ Either "none" (default) or "heuristic".}
 \item{trend}{Optional function returning the trend of the transformed GP.
 If not provided, a zero trend is used.}
 
-\item{discrete}{Logical; whether the response is treated as discrete, defaults as \code{FALSE}.}
+\item{discrete}{Logical; whether the response is treated as discrete,d efaults to \code{FALSE}.
+When \code{TRUE}, the \code{nIntegral} quadrature nodes are taken to be the support of
+the response and the normalising integral becomes an exact finite sum.
+Both \code{discrete} and \code{nIntegral} are recorded on the fitted object and
+reused as defaults by \code{\link[stats]{predict}}, \code{\link[stats]{simulate}}, \code{\link[graphics]{plot}} and \code{\link[stats]{update}}.}
 
 \item{verbose}{Logical; if \code{TRUE}, print progress and diagnostic messages during computation.
 Defaults to \code{FALSE}.}
@@ -103,7 +107,7 @@ d$y <- rnorm(nrow(d), mean = sin(2 * pi * d$x), sd = 0.2)
 fit <- slgp(
   y ~ x,
   data = d,
-  method = "none",
+  method = "Prior",
   basisFunctionsUsed = "RFF",
   predictorsLower = 0,
   predictorsUpper = 1,

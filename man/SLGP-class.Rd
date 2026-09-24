@@ -54,6 +54,23 @@ Each row corresponds to a realization of the latent field:
 
 \item{\code{trend}}{A \code{function} that returns the trend of the transformed GP (not to be estimated).}
 
+\item{\code{discrete}}{A \code{logical} indicating whether the response is treated as
+discrete, i.e. supported on the \code{nIntegral} nodes spanning
+\code{responseRange}, in which case the normalising integral is an exact
+finite sum rather than a quadrature approximation.}
+
+\item{\code{nIntegral}}{An \code{integer} giving the number of quadrature nodes used
+at fitting. For a discrete response this is the size of the support.}
+
+\item{\code{diagnostics}}{A \code{list} of fit diagnostics produced by the
+estimation scheme: convergence summaries (R-hat, effective sample sizes,
+divergent transitions) for \code{"MCMC"}, the nugget and conditioning of
+the Hessian for \code{"Laplace"}, and the optimiser return code for
+\code{"MAP"}. It also contains a \code{timing} element giving the
+wall-clock cost of the fit, split into \code{setup} (normalisation,
+quadrature pre-computation, basis evaluation) and \code{estimation}.
+See \code{\link[base]{summary}}.}
+
 \item{\code{logPost}}{A \code{numeric} value representing the (unnormalized) log-posterior of the model.
 Currently available only for MAP and Laplace-trained models.}
 }}

@@ -178,11 +178,11 @@ predictSLGP_cdf <- function(SLGPmodel,
 #' @keywords internal
 #' @noRd
 .predict_cdf <- function(SLGPmodel,
-                                 newNodes,
-                                 interpolateBasisFun = "WNN",
-                                 nIntegral=101,
-                                 nDiscret=101,
-                                 discrete=FALSE) {
+                         newNodes,
+                         interpolateBasisFun = "WNN",
+                         nIntegral=101,
+                         nDiscret=101,
+                         discrete=FALSE) {
 
   predictorNames <- SLGPmodel@covariateName
   responseName <-  SLGPmodel@responseName
@@ -665,63 +665,80 @@ sampleSLGP <- function(SLGPmodel,
                  discrete=discrete)
 }
 
-
 ## Internal worker: the real body, NO warning, NOT exported.
+#' @keywords internal
+#' @noRd
+.invert_cdf <- function(Fvals, u, r, discrete) {
+  if (discrete) {
+    u[pmin(findInterval(r, Fvals) + 1L, length(u))]
+  } else {
+    approx(x = Fvals, y = u, xout = r, ties = "ordered", rule = 2)$y
+  }
+}
+
 #' @keywords internal
 #' @noRd
 .simulate_SLGP <- function(SLGPmodel,
                            newX,
                            n,
+                           type = c("predictive", "draws"),
                            interpolateBasisFun = "WNN",
-                           nIntegral=101,
-                           nDiscret=101,
-                           seed=NULL,
-                           discrete=FALSE) {
-  if (!requireNamespace("GoFKernel", quietly = TRUE)) {
-    stop("Package 'GoFKernel' could not be used")
-  }
-  if(!is.null(seed)){
-    set.seed(seed)
-  }
-  u <- seq(SLGPmodel@responseRange[1],
-           SLGPmodel@responseRange[2],,
-           nIntegral)
-  # Check if one or many predictors
+                           nIntegral = 101,
+                           nDiscret = 101,
+                           seed = NULL,
+                           discrete = FALSE) {
+  type <- match.arg(type)
+  if (!is.null(seed)) set.seed(seed)
+
+  u <- seq(SLGPmodel@responseRange[1], SLGPmodel@responseRange[2], , nIntegral)
+
   npred <- nrow(newX)
   nsamp <- c(n)
-  if(length(nsamp)==1 & npred >1){
+  if (length(nsamp) == 1L) {
     nsamp <- rep(nsamp, npred)
+  } else if (length(nsamp) != npred) {
+    stop("'n' must have length 1 or nrow(newX).")
   }
-  if(length(nsamp)>npred){
-    warning("There are more \'n\'s than covariates provided.")
-  }
-  # Create a grid at which we want the cdfs.
-  grid <- expand.grid(u, seq(npred))
+
+  ## Grid at which we want the cdfs
+  grid <- expand.grid(u, seq_len(npred))
   grid <- data.frame(cbind(grid[, 1], newX[grid[, 2], ]))
-  colnames(grid)<- c(SLGPmodel@responseName, colnames(newX))
+  colnames(grid) <- c(SLGPmodel@responseName, colnames(newX))
 
+  cdfs <- .predict_cdf(SLGPmodel = SLGPmodel,
+                       newNodes = grid,
+                       interpolateBasisFun = interpolateBasisFun,
+                       nIntegral = nIntegral,
+                       nDiscret = nDiscret,
+                       discrete = discrete)
+  cdfs <- as.matrix(cdfs[, -seq_len(ncol(grid)), drop = FALSE])
+  ndraws <- ncol(cdfs)
 
-  cdfs <- .predict_cdf(SLGPmodel=SLGPmodel,
-                          newNodes=grid,
-                          interpolateBasisFun = interpolateBasisFun,
-                          nIntegral=nIntegral,
-                          nDiscret=nDiscret,
-                          discrete=discrete)
-  mean_cdfs <- rowMeans(cdfs[, -c(1:ncol(grid)), drop=FALSE])
-  res <- lapply(seq(npred), function(j){
-    temp <- mean_cdfs[(j-1)*nIntegral+1:nIntegral]
-    f <- approxfun(x=u, y=temp)
-    finv<-GoFKernel::inverse(f,
-                             lower=SLGPmodel@responseRange[1],
-                             upper=SLGPmodel@responseRange[2])
-    # plot(f, from=0, to=1)
-    # range(temp)
+  if (type == "draws" && ndraws == 1L) {
+    warning("The model carries a single set of coefficients; ",
+            "type = \"draws\" coincides with type = \"predictive\".")
+  }
+  if (type == "predictive") {
+    cdfs <- matrix(rowMeans(cdfs), ncol = 1L)
+  }
+
+  res <- lapply(seq_len(npred), function(j) {
+    rows <- (j - 1L) * nIntegral + seq_len(nIntegral)
     r <- runif(nsamp[j])
-    y<-  sapply(r, finv)
-    df <- data.frame(unname(y), unname(newX[rep(j, nsamp[j]), , drop=FALSE]))
-    colnames(df)<- c(SLGPmodel@responseName, colnames(newX))
-    return(df)
+    if (type == "predictive") {
+      y <- .invert_cdf(cdfs[rows, 1L], u, r, discrete)
+    } else {
+      ## one posterior draw per replicate; invert that draw's cdf
+      d <- sample.int(ndraws, nsamp[j], replace = TRUE)
+      y <- numeric(nsamp[j])
+      for (k in unique(d)) {
+        sel <- d == k
+        y[sel] <- .invert_cdf(cdfs[rows, k], u, r[sel], discrete)
+      }
+    }
+    df <- data.frame(unname(y), unname(newX[rep(j, nsamp[j]), , drop = FALSE]))
+    colnames(df) <- c(SLGPmodel@responseName, colnames(newX))
+    df
   })
-  res<- do.call(rbind, res)
-  return(res)
+  do.call(rbind, res)
 }

@@ -9,11 +9,11 @@
   y,
   newdata = NULL,
   n_slices = 6,
-  n_response = 101,
+  n_response = NULL,
   interpolateBasisFun = "WNN",
   draw = "mean",
   panels = TRUE,
-  discrete = FALSE,
+  discrete = .slgp_discrete(x),
   ...
 )
 }
@@ -29,7 +29,10 @@ spanning the model's predictor range are used.}
 \item{n_slices}{Number of covariate slices to display (single-covariate
 models only). Default 8.}
 
-\item{n_response}{Number of response grid points per slice. Default 101.}
+\item{n_response}{Number of response grid points per slice. If \code{NULL}
+(default), 101 for a continuous response and, for a discrete one, the
+number of support points recorded in \code{x} at fitting, so that the
+plotted grid coincides with the support.}
 
 \item{interpolateBasisFun}{Integral-approximation scheme; default \code{"WNN"}.}
 
@@ -42,7 +45,9 @@ slice via \code{par(mfrow=)}. If \code{FALSE}, overlay all slices in a
 single plot.}
 
 \item{discrete}{Logical; whether the response is treated as discrete.
-Default \code{FALSE}.}
+Defaults to the value recorded in \code{x} at fitting, in which case a step
+plot is drawn and the y-axis is labelled as a probability rather than a
+density.}
 
 \item{...}{Further graphical parameters passed to \code{matplot}.}
 }
@@ -66,12 +71,11 @@ set.seed(1)
 d <- data.frame(x = rep(seq(0, 1, length.out = 6), each = 5))
 d$y <- rnorm(nrow(d), mean = sin(2 * pi * d$x), sd = 0.2)
 
-fit <- slgp(
-  y ~ x, data = d, method = "Laplace", basisFunctionsUsed = "RFF",
-  predictorsLower = 0, predictorsUpper = 1, responseRange = range(d$y),
-  opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2),
-  seed = 1, opts=list(ndraws=5)
-)
+fit <- slgp(y ~ x,
+  data = d, method = "MAP", basisFunctionsUsed = "RFF",
+  predictorsLower = 0, predictorsUpper = 1,
+  responseRange = range(d$y), seed = 1,
+  opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2))
 
 plot(fit, draw = "mean")
 plot(fit, draw = c("mean", 1:5))

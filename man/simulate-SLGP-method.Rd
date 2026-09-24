@@ -9,10 +9,11 @@
   nsim = 1,
   seed = NULL,
   newdata,
+  type = "predictive",
   interpolateBasisFun = "WNN",
-  nIntegral = 101,
+  nIntegral = .slgp_nIntegral(object),
   nDiscret = 101,
-  discrete = FALSE,
+  discrete = .slgp_discrete(object),
   ...
 )
 }
@@ -25,11 +26,29 @@
 
 \item{newdata}{A \code{data.frame} of covariate values.}
 
+\item{type}{Character string; either \code{"predictive"} (default) or
+\code{"draws"}. With \code{"predictive"}, all responses are drawn from the
+posterior predictive distribution, i.e. the CDF averaged over the
+coefficient draws. With \code{"draws"}, each replicate is assigned one
+posterior draw of the SLGP and inverted against that draw's CDF, so the
+simulated sample also carries the between-draw variability of the fitted
+field. Use \code{"predictive"} to sample from the fitted model, and
+\code{"draws"} to propagate posterior uncertainty into downstream
+computations. The two coincide for models fitted with
+\code{method = "MAP"}, which carry a single coefficient vector.}
+
 \item{interpolateBasisFun}{Integral-approximation scheme; default \code{"WNN"}.}
 
-\item{nIntegral, nDiscret}{Integration / discretisation resolutions.}
+\item{nIntegral, nDiscret}{Integration / discretisation resolutions.
+\code{nIntegral} defaults to the value recorded in \code{object} at fitting:
+for a discrete response it is the size of the support.}
 
-\item{discrete}{Logical; treat the response as discrete. Default \code{FALSE}.}
+\item{discrete}{Logical: if \code{TRUE}, the response is treated as
+supported on the \code{nIntegral} nodes spanning \code{responseRange}, and
+sampling returns the first node whose CDF exceeds a uniform draw, so
+simulated values always lie on the support. If \code{FALSE}, the predictive
+CDF is inverted by linear interpolation. Defaults to the value recorded in
+\code{object} at fitting; overriding it emits a warning.}
 
 \item{...}{Ignored.}
 }
@@ -43,29 +62,18 @@ This method provides the standard user interface for simulating from a fitted
 }
 \examples{
 set.seed(1)
-d <- data.frame(
-  x = rep(seq(0, 1, length.out = 6), each = 5)
-)
+d <- data.frame(x = rep(seq(0, 1, length.out = 6), each = 5))
 d$y <- rnorm(nrow(d), mean = sin(2 * pi * d$x), sd = 0.2)
 
-fit <- slgp(
-  y ~ x,
-  data = d,
-  method = "MAP",
-  basisFunctionsUsed = "RFF",
-  predictorsLower = 0,
-  predictorsUpper = 1,
-  responseRange = range(d$y),
-  opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2),
-  seed = 1
-)
+fit <- slgp(y ~ x,
+  data = d, method = "MAP", basisFunctionsUsed = "RFF",
+  predictorsLower = 0, predictorsUpper = 1,
+  responseRange = range(d$y), seed = 1,
+  opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2))
 
 ## Draw 10 samples from the conditional distributions at two locations
-sim <- simulate(
-  fit,
-  newdata = data.frame(x = c(0.25, 0.75)),
-  nsim = 10
-)
+sim <- simulate(fit, type = "predictive",
+                newdata = data.frame(x = c(0.25, 0.75)), nsim = 10)
 
 head(sim)
 

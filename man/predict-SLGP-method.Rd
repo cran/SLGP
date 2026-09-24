@@ -12,9 +12,9 @@
   power = NULL,
   centered = FALSE,
   interpolateBasisFun = "WNN",
-  nIntegral = 101,
+  nIntegral = .slgp_nIntegral(object),
   nDiscret = 101,
-  discrete = FALSE,
+  discrete = .slgp_discrete(object),
   ...
 )
 }
@@ -42,9 +42,13 @@ centered. Default \code{FALSE}.}
 \code{"nothing"}, \code{"NN"}, \code{"WNN"} (default).}
 
 \item{nIntegral, nDiscret}{Integration / discretisation resolutions passed
-through to the workhorse functions.}
+through to the utilitarian functions. \code{nIntegral} defaults to the value
+recorded in \code{object} at fitting.}
 
-\item{discrete}{Logical; treat the response as discrete. Default \code{FALSE}.}
+\item{discrete}{Logical; treat the response as discrete. Defaults to the
+value recorded in \code{object} at fitting, so that a model fitted with
+\code{discrete = TRUE} is predicted on its support rather than being
+silently treated as continuous. Overriding either argument emits a warning.}
 
 \item{...}{Ignored.}
 }
@@ -69,28 +73,18 @@ response and the covariate columns.}
 }
 \examples{
 set.seed(1)
-d <- data.frame(
-  x = rep(seq(0, 1, length.out = 6), each = 5)
-)
+d <- data.frame(x = rep(seq(0, 1, length.out = 6), each = 5))
 d$y <- rnorm(nrow(d), mean = sin(2 * pi * d$x), sd = 0.2)
 
-fit <- slgp(
-  y ~ x,
-  data = d,
-  method = "MAP",
-  basisFunctionsUsed = "RFF",
-  predictorsLower = 0,
-  predictorsUpper = 1,
-  responseRange = range(d$y),
-  opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2),
-  seed = 1
-)
+fit <- slgp(y ~ x,
+  data = d, method = "MAP", basisFunctionsUsed = "RFF",
+  predictorsLower = 0, predictorsUpper = 1,
+  responseRange = range(d$y), seed = 1,
+  opts_BasisFun = list(nFreq = 20, MatParam = 5 / 2))
 
 ## Prediction grid for density and CDF evaluations:
-grid <- expand.grid(
-  y = seq(min(d$y), max(d$y), length.out = 100),
-  x = c(0.25, 0.75)
-)
+grid <- expand.grid(y = seq(min(d$y), max(d$y), length.out = 100),
+  x = c(0.25, 0.75))
 
 ## Predict conditional densities
 pred_density <- predict(fit, newdata = grid, type = "density")

@@ -78,14 +78,12 @@ modelMAP <- slgp(mag~long, # Use a formula with two indexing variables
                  opts_BasisFun = list(nFreq=150,
                                       MatParam=5/2),
                  discrete=TRUE)
+print(modelMAP) #Basic info
+summary(modelMAP) #additional diagnostics
+timing(modelMAP) # Access the elapsed time in seconds
 
 ## ----SLGPplottingPrior1, fig.cap = "Conditional magnitude probabilities across longitude under the MAP estimate of the SLGP.", fig.fullwidth=TRUE, fig.height=5, fig.width=10, fig.align='center', fig.pos="H"----
-plot( modelMAP,
-      newdata = data.frame(long = seq(range_x[1], range_x[2], length.out = 6)),
-      draw = "mean",
-      panels = TRUE,
-      n_response = 31,
-      discrete = TRUE)
+plot(modelMAP, draw = "mean", panels = TRUE)
 
 ## ----SLGPplottingMAPDiscrete, fig.cap = "Empirical magnitude distributions within longitude bins and SLGP MAP estimates at the corresponding bin centers.", fig.fullwidth = TRUE, fig.height = 4, fig.width = 10, fig.align = "center", fig.pos = "H"----
 
@@ -111,7 +109,7 @@ names <- sort(unique(df_filtered$category))
 dfGrid <- data.frame(expand.grid(selected_values, 
                                  seq(range_response[1], range_response[2],, 31)))
 colnames(dfGrid) <- c("long", "mag")
-predMAP <- predict(modelMAP, newdata = dfGrid, discrete=TRUE, nIntegral=31)
+predMAP <- predict(modelMAP, newdata = dfGrid)
 
 colnames(predMAP) <- c("long", "mag", "MAP estimator")
 predMAP <- predMAP%>%
